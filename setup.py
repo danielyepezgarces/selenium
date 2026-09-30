@@ -680,10 +680,10 @@ def setup(thorium_root: Path, chromium_src: Path, profile: str) -> None:
         write_setup_manifest(manifest, pending_files)
     clean_stale_managed_files(chromium_src, previous_files, current_files)
 
+    apply_patch_series(thorium_root, chromium_src, profile)
+
     print("\nCopying Thorium source overlays over the Chromium tree")
     execute_copy_plan(base_plan)
-
-    apply_patch_series(thorium_root, chromium_src, profile)
     apply_grd_rebase(thorium_root, chromium_src)
 
     execute_profile_plan(selected_profile_plan)
