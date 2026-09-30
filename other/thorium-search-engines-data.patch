@@ -12,12 +12,12 @@ index 5b30d54..1464ca2 100644
      // existing data should get a new version. Otherwise, existing data may
      // continue to be used and updates made here will not always appear.
      // Also then run tools/search_engine_choice/generate_search_engine_icons.py.
--    "kCurrentDataVersion": 213
-+    "kCurrentDataVersion": 214
+-    "kCurrentDataVersion": 215
++    "kCurrentDataVersion": 216
    },
  
    // The following engines are included in country lists and are added to the
-@@ -50,7 +50,7 @@
+@@ -52,7 +52,7 @@
      },
  
      "bing": {
@@ -26,7 +26,7 @@ index 5b30d54..1464ca2 100644
        "keyword": "bing.com",
        "favicon_url": "https://www.bing.com/favicon.ico",
        "base_builtin_resource_id": "SEARCH_ENGINE_BING",
-@@ -322,7 +322,7 @@
+@@ -324,7 +324,7 @@
      },
  
      "panda": {
@@ -35,62 +35,3 @@ index 5b30d54..1464ca2 100644
        "keyword": "panda-search.org",
        "favicon_url": "https://panda-search.org/favicon.ico",
        "base_builtin_resource_id": "SEARCH_ENGINE_PANDA",
-diff --git a/definitions/regional_settings.json b/definitions/regional_settings.json
-index d65472d..454b600 100644
---- a/definitions/regional_settings.json
-+++ b/definitions/regional_settings.json
-@@ -370,7 +370,10 @@
-         "&bing",
-         "&sogou",
-         "&so_360",
--        "&google"
-+        "&google",
-+        "&brave",
-+        "&duckduckgo",
-+        "&ecosia"
-       ]
-     },
-     "CO": {
-@@ -613,7 +616,9 @@
-         "&baidu",
-         "&brave",
-         "&bing",
--        "&naver"
-+        "&naver",
-+        "&duckduckgo",
-+        "&ecosia"
-       ]
-     },
-     "HN": {
-@@ -1135,7 +1140,8 @@
-         "&yandex_ru",
-         "&duckduckgo",
-         "&brave",
--        "&bing"
-+        "&bing",
-+        "&ecosia"
-       ]
-     },
-     "SA": {
-@@ -1369,7 +1375,8 @@
-         "&bing",
-         "&brave",
-         "&you",
--        "&duckduckgo"
-+        "&duckduckgo",
-+        "&ecosia"
-       ]
-     },
-     "VN": {
-@@ -1421,7 +1428,10 @@
-       "search_engines": [
-         "&google",
-         "&bing",
--        "&yahoo"
-+        "&yahoo",
-+        "&duckduckgo",
-+        "&brave",
-+        "&ecosia"
-       ]
-     }
-   }

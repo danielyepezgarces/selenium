@@ -1,23 +1,3 @@
-diff --git a/chrome/app/chrome_main_delegate.cc b/chrome/app/chrome_main_delegate.cc
-index fc9511ef83c54..ce8fc5d0ec95f 100644
---- a/chrome/app/chrome_main_delegate.cc
-+++ b/chrome/app/chrome_main_delegate.cc
-@@ -776,6 +776,15 @@ void InitLogging(const std::string& process_type) {
-                  << chrome::kChromeVersion << " (not a warning)";
-     LOG(WARNING) << "In Loving Memory of Linda Louise Frick: Grandma, Mother, and Sister.";
-   }
-+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
-+  static const bool is_forced_tab_scroll =
-+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-+          "scroll-tabs") == "always";
-+  if (is_forced_tab_scroll) {
-+    LOG(WARNING) << "Warning: chrome://flags#scroll-tabs is enabled on this non-Linux machine. "
-+                 << "Bugs are likely and should be reported to Alex313031.";
-+  }
-+#endif
- }
- #endif  // !BUILDFLAG(IS_ANDROID)
- 
 diff --git a/chrome/browser/ui/views/frame/browser_root_view.cc b/chrome/browser/ui/views/frame/browser_root_view.cc
 index 8a0f9cd21c508..9acccef81c5c4 100644
 --- a/chrome/browser/ui/views/frame/browser_root_view.cc

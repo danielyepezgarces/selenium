@@ -28,7 +28,7 @@ index 6aac05299cda8..6438357d118c8 100644
  
 @@ -30,6 +31,9 @@ BASE_FEATURE_PARAM(bool,
  
- BASE_FEATURE(kTabSearchCjkWordBoundary, base::FEATURE_DISABLED_BY_DEFAULT);
+ BASE_FEATURE(kTabSearchCjkWordBoundary, base::FEATURE_ENABLED_BY_DEFAULT);
  
 +BASE_FEATURE(kThoriumLeftAlignedTabStripComboButton,
 +             base::FEATURE_DISABLED_BY_DEFAULT);
@@ -114,6 +114,8 @@ index aa8f7da426500..8bc95a92fecbd 100644
      : browser_view_(browser_view),
 +      render_combo_button_before_tab_strip_(
 +          tabs::IsTabStripComboButtonBeforeTabStrip()),
+       render_combo_button_before_tab_strip_(
+           tabs::IsTabStripComboButtonBeforeTabStrip()),
        action_view_controller_(std::make_unique<views::ActionViewController>()) {
    views::SetCascadingColorProviderColor(
        this, views::kCascadingBackgroundColor,

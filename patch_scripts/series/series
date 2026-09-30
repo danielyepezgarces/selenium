@@ -36,17 +36,15 @@ other/enable-saving-pages-from-all-schemes.patch
 other/content-gpu-vaapi-libva-config.patch
 other/thorium-content-shell-branding.patch
 other/thorium-common-branding-paths.patch
-other/android-thorium-branding.patch
+[android] other/android-thorium-branding.patch
 other/thorium-startup-logging.patch
 other/thorium-app-metadata-branding.patch
 other/thorium-theme-resources.patch
 other/thorium-app-vector-icons.patch
-other/preinstall-ublock-origin.patch
 other/bookmark-default-prefs.patch
 other/bookmark-dialog-default-folder.patch
 other/increase-bookmark-open-prompt-threshold.patch
 other/thorium-browser-ui-default-prefs.patch
-other/tab-strip-combo-button-position.patch
 other/dom-distiller-reader-mode.patch
 
 # 30 - Build graph, toolchain, and platform build behavior.
@@ -62,20 +60,16 @@ other/linux-disable-custom-titlebar-default.patch
 other/linux-obsolete-system-policy.patch
 other/linux-memory-details-branding.patch
 other/linux-shell-integration-branding.patch
-other/thorium-linux-installer-packaging.patch
 other/thorium-ui-debug-shell.patch
 other/thorium-webui-image-resources.patch
 other/thorium-browser-resource-branding.patch
 
 # 50 - UI defaults, flags, WebUI, policy, FTP, and broad UI restoration.
-other/omnibox-search-engine-icon-branding.patch
 other/relax-bad-flags-warning.patch
 other/disable-startup-warning-infobars.patch
 other/disable-default-browser-prompt.patch
 other/thorium-chrome-urls-page.patch
 other/thorium-flags-registration.patch
-other/thorium-internal-url-scheme-alias.patch
-other/thorium-internal-url-scheme-branding.patch
 other/thorium-flags-page-branding.patch
 other/thorium-version-page-branding.patch
 other/thorium-vector-icons.patch
@@ -86,8 +80,6 @@ other/disable-ai-entrypoints-by-default.patch
 other/enable-chrome-labs-by-default.patch
 other/enable-whats-new-by-default.patch
 other/fix-policy-templates.patch
-other/ftp-support-thorium.patch
-other/GPC.patch
 other/add-flag-for-close-confirmation.patch
 other/thorium-debug-mode.patch
 other/thorium-first-run-welcome.patch
@@ -95,19 +87,12 @@ other/disable-middle-click-paste-with-autoscroll.patch
 other/views-menu-delay.patch
 other/new-tab-to-left-context-menu.patch
 other/status-bubble-instant-expand.patch
-other/enable-sharing-hub-page-action.patch
-other/thorium-2024-ui-core.patch
-other/thorium-2024-menu-interactions.patch
 other/custom-tab-width.patch
 other/expand-chrome-color-choices.patch
-other/classic-omnibox.patch
-other/rectangular-tabs.patch
 other/prominent-active-tab-titles.patch
 other/toolbar-avatar-button-visibility.patch
-other/restore-tab-button.patch
 other/thorium-chrome-labs-experiments.patch
 other/add-flag-for-system-linux-theme.patch
-other/restore_download_shelf.patch
 other/downloads-page-enhancements.patch
 
 # 60 - Installer, shell integration, and context-menu behavior.
@@ -120,17 +105,10 @@ other/add-flag-to-close-window-with-last-tab.patch
 other/add-flag-to-scroll-tabs.patch
 other/enable-ctrl-tab-mru.patch
 other/add-flag-for-double-click-close-tab.patch
-other/add-flag-for-right-click-close-tab.patch
-other/add-flag-for-hover-activate-tab.patch
-other/add-flag-for-open-bookmarks-in-new-tab.patch
-other/add-flag-for-open-omnibox-url-in-new-tab.patch
-other/disable-qr-code-generator.patch
-other/hide-cast-context-menu.patch
 other/add-flag-for-incognito-themes.patch
 other/add-flag-to-hide-extensions-menu.patch
 other/add-flag-to-hide-tab-close-buttons.patch
 other/add-flag-for-custom-ntp.patch
-other/add-flag-for-tab-hover-cards.patch
 other/force-disable-tab-outlines.patch
 other/quiet-notification-defaults.patch
 other/secure-doh-without-system-dns-config.patch
@@ -138,7 +116,6 @@ other/keep-doh-enabled-on-managed-devices.patch
 other/add-flag-for-encrypted-client-hello.patch
 other/reduce-doh-request-headers.patch
 other/disable-alternate-error-pages-by-default.patch
-other/add-flag-to-keep-all-history.patch
 other/add-flag-to-clear-data-on-exit.patch
 other/enable-parallel-downloading-by-default.patch
 other/disable-background-mode-by-default.patch
@@ -148,12 +125,12 @@ other/disable-download-quarantine.patch
 other/notify-shell-after-download-complete.patch
 other/disable-vulkan-gpu-log-warnings.patch
 other/thorium-sandbox-compat.patch
-other/thoriumos-ash-vector-icons.patch
-other/thoriumos-help-app-discovery.patch
-other/thoriumos-sample-system-web-app.patch
-other/thoriumos-disable-stats-reporting.patch
+[chromeos] other/thoriumos-ash-vector-icons.patch
+[chromeos] other/thoriumos-help-app-discovery.patch
+[chromeos] other/thoriumos-sample-system-web-app.patch
+[chromeos] other/thoriumos-disable-stats-reporting.patch
 other/add-flag-for-auto-dark-mode.patch
-other/disable-thorium-icons.patch
+[chromeos] other/disable-thorium-icons.patch
 other/always-enable-reload-menu.patch
 
 # 80 - Extensions, privacy, install branding, and late platform overlays.
@@ -163,18 +140,17 @@ other/show-hosted-apps-in-extensions.patch
 other/thorium_webui.patch
 other/keyboard_shortcuts.patch
 other/keep-expired-flags.patch
-other/disable-privacy-sandbox.patch
 other/disable-encryption.patch
 other/disable-feature-promos.patch
 other/thorium-install-static-branding.patch
 other/windows-chrome-proxy-branding.patch
 other/windows-profile-shortcut-icon-version.patch
 other/disable-aero.patch
-other/android-disable-signin-without-account-manager.patch
-other/android-extensions-support.patch
-other/enable-extension-in-incognito.patch
+[android] other/android-disable-signin-without-account-manager.patch
+[android] other/android-extensions-support.patch
+[android] other/enable-extension-in-incognito.patch
 other/add-quick-extension-toggle-menu.patch
-other/enable-android-devtools-frontend.patch
+[android] other/enable-android-devtools-frontend.patch
 
 # 95 - Conditional / platform-specific overlays that are still active.
 [raspi] other/linux-widevine-cdm-locations.patch
