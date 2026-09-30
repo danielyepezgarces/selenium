@@ -37,6 +37,25 @@ const FeatureEntry::Choice kScrollEventChangesTab[] = {
      "never"}
 };
 
+const FeatureEntry::Choice kScrollableTabStripChoices[] = {
+    {flags_ui::kGenericExperimentChoiceDefault, "", ""},
+    {"Enabled - tabs shrink to medium width (120px)",
+     "scrollable-tabstrip",
+     "medium"},
+    {"Enabled - tabs shrink to large width (160px)",
+     "scrollable-tabstrip",
+     "large"},
+    {"Enabled - tabs shrink to small width (88px)",
+     "scrollable-tabstrip",
+     "small"},
+    {"Enabled - tabs don't shrink (standard width)",
+     "scrollable-tabstrip",
+     "none"},
+    {"Disabled (tabs shrink to slivers)",
+     "scrollable-tabstrip",
+     "disabled"}
+};
+
 const FeatureEntry::Choice kAutoplayPolicyChoices[] = {
     {flags_ui::kGenericExperimentChoiceDefault, "", ""},
     {"No User Gesture Required",

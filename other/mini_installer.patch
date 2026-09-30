@@ -228,12 +228,12 @@ index ce1f5a5711eeb..7e124474b9eed 100644
    }
  }
  
-+_thorium_mini_installer_target = "thorium_mini_installer"
++_thorium_mini_installer_target = "selenium_installer"
 +if (current_cpu == "arm64") {
-+  _thorium_mini_installer_target = "thorium_ARM64_installer"
++  _thorium_mini_installer_target = "selenium_ARM64_installer"
 +} else if (thorium_windows_installer_label != "") {
 +  _thorium_mini_installer_target =
-+      "thorium_${thorium_windows_installer_label}_mini_installer"
++      "selenium_${thorium_windows_installer_label}_installer"
 +}
 +
  generate_mini_installer("mini_installer") {

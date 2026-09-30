@@ -26,9 +26,9 @@
      "Enable a new \"hybrid\" UI, which restores many parts of the pre-Chrome Refresh 2023 UI. Good for people "
      "who find the new UI ugly or harder to use.",
      kOsDesktop, FEATURE_VALUE_TYPE(features::kThorium2024)},
-    {"thorium-internal-url-scheme",
-     "Use thorium:// for internal URLs",
-     "Displays and copies internal browser URLs using the thorium:// alias. "
+    {"selenium-internal-url-scheme",
+     "Use selenium:// for internal URLs",
+     "Displays and copies internal browser URLs using the selenium:// alias. "
      "The canonical internal scheme remains chrome://, and both schemes are "
      "accepted.",
      kOsDesktop | kOsAndroid,
@@ -101,6 +101,10 @@
      "Custom Tab Width",
      "Allows setting the default tab width, in DIP. Normally 1 DIP = 1 Pixel, and the standard width for tabs is 240.",
      kOsAll, MULTI_VALUE_TYPE(kCustomTabWidthChoices)},
+    {"scrollable-tabstrip",
+     "Scrollable TabStrip",
+     "Enables tabs to maintain a readable minimum width when many tabs are open, and allows scrolling the tabstrip horizontally with mouse wheel or buttons instead of shrinking tabs into slivers.",
+     kOsDesktop, MULTI_VALUE_TYPE(kScrollableTabStripChoices)},
     {"disable-thorium-dns-config",
      "Disable Thorium Secure DNS Fallback",
      "Disables Thorium's fallback that keeps explicitly configured Secure DNS-over-HTTPS available when the platform DNS configuration is unavailable. "

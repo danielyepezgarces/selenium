@@ -1,0 +1,399 @@
+# Copyright 2026 The Chromium Authors and Alex313031
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build/config/compiler_opt.gni")
+import("//build/config/win/manifest.gni")
+import("//build/config/python.gni")
+import("//build/config/ui.gni")
+import("//build/timestamp.gni")
+import("//chrome/process_version_rc_template.gni")
+import("//third_party/dawn/scripts/dawn_features.gni")
+import("//third_party/ffmpeg/ffmpeg_options.gni")
+import("//third_party/icu/config.gni")
+import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
+import("//ui/base/ui_features.gni")
+import("//ui/gl/features.gni")
+import("//v8/gni/v8.gni")
+
+declare_args() {
+  # The Chrome archive is maximally compressed in official builds to reduce the
+  # size of the installer. By default: non-official or component builds, build
+  # modes targeting developers, use maximum-speed instead of maximum-compression
+  # settings so as to provide quicker build-test cycles. Uncompressed archives
+  # are not supported due to size constraints.
+  fast_archive_compression = !is_official_build || is_component_build
+
+  # Enables the //chrome/installer/mini_installer:mini_installer_uncompressed
+  # target, which is a variant of the installer containing an uncompressed
+  # Chrome archive and setup.exe. The Chrome archive is compressed by default in
+  # official builds. This archive will then be used to produce both compressed
+  # and uncompressed mini_installer executables. This is done during the signing
+  # step to keep the signed binaries and signatures as close to identical as
+  # possible. This must be ignored for debug builds and is only intended to
+  # allow developers to test the uncompressed installer locally.
+  enable_uncompressed_archive = false
+}
+
+windows_manifest("mini_installer_exe_manifest") {
+  sources = [
+    as_invoker_manifest,
+    common_controls_manifest,
+    default_compatibility_manifest,
+    "mini_installer_dpi.manifest",
+  ]
+}
+
+source_set("lib") {
+  sources = [
+    "appid.h",
+    "chrome_appid.cc",
+    "configuration.cc",
+    "configuration.h",
+    "decompress.cc",
+    "decompress.h",
+    "delete_with_retry.cc",
+    "delete_with_retry.h",
+    "enumerate_resources.cc",
+    "enumerate_resources.h",
+    "memory_range.h",
+    "mini_file.cc",
+    "mini_file.h",
+    "mini_installer.cc",
+    "mini_installer.h",
+    "mini_installer.rc",
+    "mini_installer_constants.cc",
+    "mini_installer_constants.h",
+    "mini_installer_localization.cc",
+    "mini_installer_localization.h",
+    "mini_installer_resource.h",
+    "mini_string.cc",
+    "mini_string.h",
+    "path_string.h",
+    "regkey.cc",
+    "regkey.h",
+    "write_to_disk.cc",
+    "write_to_disk.h",
+  ]
+
+  deps = [
+    ":mini_installer_product_version",
+    "//base:compiler_specific",
+    "//build:branding_buildflags",
+    "//chrome/installer/util:strings",
+  ]
+
+  # This executable is the CPU compatibility gate for setup and the browser.
+  # Keep all of its runtime code at the Chromium/Windows ABI baseline. The
+  # strings dependency contributes generated resources only.
+  configs -= [ "//build/config/compiler:thorium_x86_isa" ]
+  # The shared system PCM uses the browser ISA, not the installer baseline.
+  use_libcxx_modules = false
+}
+
+process_version("mini_installer_product_version") {
+  process_only = true
+  visibility = [ ":*" ]
+  template_file = "mini_installer_version.h.template"
+  sources = [ "//chrome/VERSION" ]
+  output = "$target_gen_dir/mini_installer_version.h"
+}
+
+source_set("unit_tests") {
+  testonly = true
+
+  sources = [
+    "configuration_test.cc",
+    "decompress_test.cc",
+    "delete_with_retry_test.cc",
+    "mini_file_test.cc",
+    "mini_installer_unittest.cc",
+    "mini_string_test.cc",
+    "write_to_disk_unittest.cc",
+  ]
+
+  public_deps = [ ":lib" ]
+  deps = [
+    "//base",
+    "//base/test:test_support",
+    "//build:branding_buildflags",
+    "//chrome/install_static:install_static_util",
+    "//chrome/installer/util:with_no_strings",
+    "//testing/gtest",
+  ]
+}
+
+# The runtime deps are used to tell create_installer_archive what component
+# DLLs need to be packaged in a component build.
+chrome_runtime_deps = "$root_gen_dir/chrome_component.runtime_deps"
+setup_runtime_deps = "$root_gen_dir/setup.runtime_deps"
+
+group("chrome_runtime_deps") {
+  write_runtime_deps = chrome_runtime_deps
+  data_deps = [
+    "//chrome",
+    "//chrome/chrome_proxy",
+  ]
+}
+
+group("setup_runtime_deps") {
+  write_runtime_deps = setup_runtime_deps
+  data_deps = [ "//chrome/installer/setup" ]
+}
+
+packed_files_rc_file = "$target_gen_dir/mini_installer/packed_files.rc"
+
+# Debug builds must not exceed the 2GB limit in order to avoid corrupting the
+# mini_installer, and therefore must be compressed.
+# The `enable_uncompressed_archive` arg is only intended for uncompressed
+# targets, so we assert that this flag is only set when not building for debug:
+# https://crbug.com/40253437.
+assert(!is_debug || !enable_uncompressed_archive)
+
+if (enable_uncompressed_archive) {
+  packed_files_rc_file_uncompressed =
+      "$target_gen_dir/mini_installer/packed_files_uncompressed.rc"
+}
+
+action("mini_installer_archive") {
+  script = "//chrome/tools/build/win/create_installer_archive.py"
+
+  release_file = "chrome.release"
+
+  inputs = [
+    "$root_out_dir/chrome.dll",
+    "$root_out_dir/chrome_elf.dll",
+    "$root_out_dir/selenium.exe",
+    "$root_out_dir/locales/en-US.pak",
+    "$root_out_dir/setup.exe",
+    "//chrome/tools/build/win/makecab.py",
+    release_file,
+  ]
+
+  outputs = [
+    "$root_out_dir/chrome.7z",
+    "$root_out_dir/chrome.packed.7z",
+    "$root_out_dir/setup.ex_",
+    packed_files_rc_file,
+  ]
+  args = [
+    "--build_dir",
+    rebase_path(root_out_dir, root_build_dir),
+    "--staging_dir",
+    rebase_path("$target_gen_dir/mini_installer", root_build_dir),
+    "--input_file",
+    rebase_path(release_file, root_build_dir),
+    "--resource_file_path",
+    rebase_path(packed_files_rc_file, root_build_dir),
+    "--target_arch=$current_cpu",
+    "--distribution=_${branding_path_product}",
+    "--output_dir",
+    rebase_path(root_out_dir, root_build_dir),
+    "--chrome_runtime_deps",
+    rebase_path(chrome_runtime_deps, root_build_dir),
+    "--setup_runtime_deps",
+    rebase_path(setup_runtime_deps, root_build_dir),
+    "--build_time",
+    build_timestamp,
+  ]
+
+  deps = [
+    ":chrome_runtime_deps",
+    ":setup_runtime_deps",
+    "//chrome",
+    "//chrome:chrome_dll",
+    "//chrome/browser/extensions/default_extensions",
+    "//chrome/chrome_elf",
+    "//chrome/common/win:eventlog_provider",
+    "//chrome/installer/setup",
+    "//third_party/icu:icudata",
+  ]
+
+  if (enable_hidpi) {
+    args += [ "--enable_hidpi=1" ]
+  }
+  if (is_component_build) {
+    args += [ "--component_build=1" ]
+  }
+
+  if (is_component_ffmpeg) {
+    args += [ "--component_ffmpeg_build=1" ]
+  }
+
+  if (use_static_angle) {
+    args += [ "--use_static_angle=True" ]
+  }
+
+  if (fast_archive_compression) {
+    args += [ "--fast_archive_compression" ]
+  }
+
+  if (enable_uncompressed_archive) {
+    outputs += [ packed_files_rc_file_uncompressed ]
+    args += [
+      "--resource_file_path_uncompressed",
+      rebase_path(packed_files_rc_file_uncompressed, root_build_dir),
+    ]
+  }
+
+  if (icu_use_data_file) {
+    inputs += [ "$root_out_dir/icudtl.dat" ]
+  }
+
+  if (v8_use_external_startup_data) {
+    deps += [ "//v8" ]
+    if (use_v8_context_snapshot) {
+      inputs += [ "$root_out_dir/$v8_context_snapshot_filename" ]
+      deps += [ "//tools/v8_context_snapshot" ]
+    }
+    if (!use_v8_context_snapshot || include_both_v8_snapshots) {
+      inputs += [ "$root_out_dir/snapshot_blob.bin" ]
+      args += [ "--include_snapshotblob=1" ]
+    }
+  }
+
+  if (dawn_use_built_dxc) {
+    args += [ "--include_dxc=1" ]
+  }
+
+  depfile = "$target_gen_dir/archive.d"
+  args += [
+    "--depfile",
+    rebase_path(depfile, root_build_dir),
+  ]
+}
+
+source_set("mini_installer_sources") {
+  sources = [ "mini_installer_exe_main.cc" ]
+  deps = [
+    ":lib",
+    "//chrome/installer/util:thorium_cpu_features",
+  ]
+  configs -= [ "//build/config/compiler:thorium_x86_isa" ]
+  # The shared system PCM uses the browser ISA, not the installer baseline.
+  use_libcxx_modules = false
+  defines =
+      [ "THORIUM_INSTALLER_CPU_FEATURES=$thorium_x86_required_cpu_features" ]
+}
+
+copy("copy_signing") {
+  sources = [ "//chrome/tools/build/win/resedit.py" ]
+  outputs = [ "$root_out_dir/signing/mini_installer/{{source_file_part}}" ]
+}
+
+# Generates a mini_installer executable containing the resources provided in the
+# caller's `rc_file`.
+template("generate_mini_installer") {
+  _installer_target_name = target_name
+  _version_target = "${_installer_target_name}_version"
+  process_version_rc_template(_version_target) {
+    template_file = "mini_installer_exe_version.rc.version"
+    output = "$target_gen_dir/${_installer_target_name}_version.rc"
+    if (defined(invoker.version_output)) {
+      output = invoker.version_output
+    }
+    extra_args = [
+      "-e",
+      "INTERNAL_NAME=\"${invoker.internal_name}\"",
+      "-e",
+      "ORIGINAL_FILENAME=\"${invoker.original_filename}\"",
+    ]
+  }
+
+  executable(target_name) {
+    sources = [ invoker.rc_file ]
+    if (defined(invoker.output_name)) {
+      output_name = invoker.output_name
+    }
+
+    configs -= [
+      "//build/config/compiler:thorium_x86_isa",
+      "//build/config/win:console",
+    ]
+    configs += [ "//build/config/win:windowed" ]
+    use_libcxx_modules = false
+
+    # The Thorium installer UI uses the CRT, C++ standard library, and task
+    # dialog APIs. Unlike Chromium's minimal installer, it cannot use a custom
+    # CRT-free entry point.
+    libs = [
+      "comctl32.lib",
+      "setupapi.lib",
+    ]
+
+    deps = [
+      ":$_version_target",
+      ":copy_signing",
+      ":lib",
+      ":mini_installer_archive",
+      ":mini_installer_sources",
+      ":mini_installer_exe_manifest",
+    ]
+  }
+}
+
+_thorium_mini_installer_target = "selenium_installer"
+if (current_cpu == "arm64") {
+  _thorium_mini_installer_target = "selenium_ARM64_installer"
+} else if (thorium_windows_installer_label != "") {
+  _thorium_mini_installer_target =
+      "selenium_${thorium_windows_installer_label}_installer"
+}
+
+generate_mini_installer("mini_installer") {
+  rc_file = packed_files_rc_file
+  output_name = _thorium_mini_installer_target
+  internal_name = _thorium_mini_installer_target
+  original_filename = "${_thorium_mini_installer_target}.exe"
+}
+
+if (enable_uncompressed_archive) {
+  generate_mini_installer("mini_installer_uncompressed") {
+    rc_file = packed_files_rc_file_uncompressed
+    internal_name = "mini_installer_uncompressed"
+    original_filename = "mini_installer_uncompressed.exe"
+  }
+}
+
+# previous_version_mini_installer.exe can't be generated in an x86 Debug
+# component build because it requires too much memory.
+# TODO(thakis): Enable this in cross builds, https://crbug.com/40557129
+if (!(is_component_build && is_debug && target_cpu == "x86") &&
+    host_os == "win") {
+  action("previous_version_mini_installer") {
+    pool = "//build/toolchain:link_pool($default_toolchain)"
+    script = "generate_previous_version_mini_installer.py"
+    testonly = true
+    if (target_cpu == "arm64") {
+      select_toolchain = host_toolchain
+    } else {
+      select_toolchain = current_toolchain
+    }
+    alternate_version_generator_target =
+        "//chrome/installer/test:alternate_version_generator($select_toolchain)"
+    alternate_version_generator_rel_path =
+        rebase_path(
+            get_label_info(alternate_version_generator_target, "root_out_dir") +
+                "/alternate_version_generator.exe",
+            root_out_dir)
+    inputs = [
+      "$root_out_dir/" + alternate_version_generator_rel_path,
+      "$root_out_dir/${_thorium_mini_installer_target}.exe",
+    ]
+    outputs = [ "$root_out_dir/$target_name.exe" ]
+    args = [
+      "--alternate_version_generator",
+      alternate_version_generator_rel_path,
+      "--mini_installer",
+      "${_thorium_mini_installer_target}.exe",
+      "--out",
+      "$target_name.exe",
+      "--path_7za",
+      "../../third_party/lzma_sdk/bin/win64",
+    ]
+    deps = [
+      ":mini_installer",
+      alternate_version_generator_target,
+    ]
+  }
+}

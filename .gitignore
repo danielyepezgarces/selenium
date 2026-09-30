@@ -17,6 +17,7 @@ API_KEYS.txt
 # tracks a small number of executable build tools.
 mini_installer.exe
 thorium*installer*.exe
+selenium*installer*.exe
 
 # Repository-local packaging output directories.
 /release/
