@@ -34,6 +34,7 @@ extra_files = [
     "components/webui/version/resources/about_version.html",
     "components/webui/flags/resources/app.html.ts",
     "chrome/installer/launcher_support/chrome_launcher_support.cc",
+    "chrome/app/theme/chromium/BRANDING",
 ]
 
 total_replaced_files = 0

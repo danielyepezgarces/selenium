@@ -21,6 +21,7 @@
      kOsLinux, SINGLE_VALUE_TYPE("use-system-linux-theme")},
 #endif // BUILDFLAG(IS_LINUX)
 
+#if 0
     {"thorium-2024",
      "Enable Experimental Thorium 2024 (Th24) UI",
      "Enable a new \"hybrid\" UI, which restores many parts of the pre-Chrome Refresh 2023 UI. Good for people "
@@ -57,6 +58,7 @@
      "Restore Tab Button",
      "Enable a new toolbar button to restore your recently closed tabs.",
      kOsDesktop, FEATURE_VALUE_TYPE(features::kRestoreTabButton)},
+#endif
     {"prominent-active-tab-titles",
      "Prominent Active Tab Titles",
      "Makes the active tab title bolder so that it is easier to identify.",
@@ -169,12 +171,14 @@
      "Allows downloading files from mixed origin/cross origin schemes.",
      kOsAll, SINGLE_VALUE_TYPE("allow-insecure-downloads")},
 
+#if 0
 #if !BUILDFLAG(IS_ANDROID)
     {"download-shelf",
      "Restore Download Shelf",
      "When enabled, the traditional download shelf is used instead of the download bubble in the toolbar. Thorium flag",
      kOsDesktop, FEATURE_VALUE_TYPE(features::kDownloadShelf)},
 #endif // BUILDFLAG(IS_ANDROID)
+#endif
 
     {"show-avatar-button",
      "Show/Hide the Avatar Button",
@@ -257,6 +261,7 @@
      "Double Click to Close Tab",
      "Enables double clicking a tab to close it.",
      kOsDesktop, SINGLE_VALUE_TYPE("double-click-close-tab")},
+#if 0
     {"right-click-to-close-tab",
      "Right Click to Close Tab",
      "Enables closing tabs with a right click. Hold Shift while right clicking to show the tab context menu instead.",
@@ -282,6 +287,7 @@
      FEATURE_WITH_PARAMS_VALUE_TYPE(features::kOpenOmniboxUrlInNewTab,
                                     kOpenOmniboxUrlInNewTabVariations,
                                     "OpenOmniboxUrlInNewTab")},
+#endif
     {"close-confirmation",
      "Close Confirmation",
      "Show a warning prompt when closing browser window(s).",

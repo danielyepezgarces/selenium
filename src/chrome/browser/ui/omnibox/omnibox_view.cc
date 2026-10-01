@@ -1,4 +1,4 @@
-// Copyright 2026 The Chromium Authors and Alex313031
+// Copyright 2012 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -27,6 +27,7 @@
 #include "components/omnibox/browser/location_bar_model.h"
 #include "components/omnibox/browser/omnibox_field_trial.h"
 #include "components/omnibox/common/omnibox_feature_configs.h"
+#include "components/search/search.h"
 #include "components/search_engines/template_url_service.h"
 #include "extensions/buildflags/buildflags.h"
 #include "url/url_constants.h"
@@ -48,8 +49,8 @@ namespace {
 #if !BUILDFLAG(IS_ANDROID)
 // Return true if the given match uses a vector icon with a background.
 bool HasVectorIconBackground(const AutocompleteMatch& match) {
-  return match.type == AutocompleteMatchType::HISTORY_CLUSTER ||
-         match.type == AutocompleteMatchType::PEDAL;
+  return match.type == omnibox::AutocompleteMatchType::kHistoryCluster ||
+         match.type == omnibox::AutocompleteMatchType::kPedal;
 }
 #endif
 
@@ -78,16 +79,18 @@ ui::ImageModel OmniboxView::GetIcon(int dip_size,
                                     IconFetchedCallback on_icon_fetched,
                                     bool dark_mode) const {
   if (controller()->edit_model()->ShouldShowCurrentPageIcon()) {
+#if !BUILDFLAG(IS_ANDROID)
     const GURL& current_url = controller()->client()->GetURL();
     if (current_url.is_valid() &&
         (current_url.SchemeIs(content::kChromeUIScheme) ||
-         current_url.SchemeIs(content::kThoriumUIScheme) ||
          current_url.SchemeIs("thorium") ||
          current_url.SchemeIs("selenium"))) {
       return ui::ImageModel::FromImage(
-          ui::ResourceBundle::GetSharedInstance().GetImageNamed(
-              IDR_PRODUCT_LOGO_32));
+          controller()->client()->GetSizedIcon(
+              ui::ResourceBundle::GetSharedInstance().GetImageNamed(
+                  IDR_PRODUCT_LOGO_16)));
     }
+#endif
     return ui::ImageModel::FromVectorIcon(
         controller()->client()->GetVectorIcon(), color_current_page_icon,
         dip_size);
@@ -131,12 +134,12 @@ ui::ImageModel OmniboxView::GetIcon(int dip_size,
         return ui::ImageModel::FromImage(icon);
       }
     }
-    if (turl) {
-      favicon = controller()->client()->GetFaviconForKeywordSearchProvider(
-          turl, std::move(on_icon_fetched));
-    }
+    favicon = turl ? controller()->client()->GetFaviconForKeywordSearchProvider(
+                         turl, std::move(on_icon_fetched))
+                   : controller()->client()->GetFaviconForDefaultSearchProvider(
+                         std::move(on_icon_fetched));
 
-  } else if (match.type != AutocompleteMatchType::HISTORY_CLUSTER) {
+  } else if (match.type != omnibox::AutocompleteMatchType::kHistoryCluster) {
     // The starter pack suggestions are a unique case. These suggestions
     // normally use a favicon image that cannot be styled further by client
     // code. In order to apply custom styling to the icon (e.g. colors), we
@@ -177,7 +180,8 @@ ui::ImageModel OmniboxView::GetIcon(int dip_size,
                                 .use_action_icons_in_location_bar) {
     OmniboxPopupSelection selection =
         controller()->edit_model()->GetPopupSelection();
-    if (selection.state == OmniboxPopupSelection::FOCUSED_BUTTON_ACTION &&
+    if (selection.state ==
+            OmniboxPopupSelection::LineState::kFocusedButtonAction &&
         selection.action_index < match.actions.size()) {
       action = match.actions[selection.action_index].get();
     }
@@ -185,10 +189,11 @@ ui::ImageModel OmniboxView::GetIcon(int dip_size,
   const gfx::VectorIcon& vector_icon =
       action ? action->GetVectorIcon()
              : match.GetVectorIcon(is_bookmarked, turl);
-  const auto& color = (match.type == AutocompleteMatchType::HISTORY_CLUSTER ||
-                       match.type == AutocompleteMatchType::STARTER_PACK)
-                          ? color_bright_vectors
-                          : color_vectors;
+  const auto& color =
+      (match.type == omnibox::AutocompleteMatchType::kHistoryCluster ||
+       match.type == omnibox::AutocompleteMatchType::kStarterPack)
+          ? color_bright_vectors
+          : color_vectors;
   return ui::ImageModel::FromVectorIcon(
       vector_icon,
       HasVectorIconBackground(match) ? color_vectors_with_background : color,
@@ -222,6 +227,10 @@ bool OmniboxView::IsImeShowingPopup() const {
 void OmniboxView::ShowVirtualKeyboardIfEnabled() {}
 
 void OmniboxView::HideImeIfNeeded() {}
+
+bool OmniboxView::IsFullWebUIOmnibox() const {
+  return false;
+}
 
 OmniboxView::State OmniboxView::GetState() const {
   State state;
@@ -364,7 +373,7 @@ std::u16string OmniboxView::ComputeFriendlySuggestionTextForAccessibility(
   suggestion_text_prefix_length = 0;
 
   if (controller()->edit_model()->GetPopupSelection().state ==
-      OmniboxPopupSelection::LineState::FOCUSED_BUTTON_AIM) {
+      OmniboxPopupSelection::LineState::kFocusedButtonAim) {
     friendly_suggestion_text =
         controller()->edit_model()->GetPopupAccessibilityLabelForAimButton();
   } else if (controller()->edit_model()->GetPopupSelection().line ==
@@ -372,7 +381,7 @@ std::u16string OmniboxView::ComputeFriendlySuggestionTextForAccessibility(
     // If nothing is selected in the popup, we are in the no-default-match edge
     // case, and |match| is a synthetically generated match. In that case,
     // bypass OmniboxPopupModel and get the label from our synthetic |match|.
-    friendly_suggestion_text = AutocompleteMatchType::ToAccessibilityLabel(
+    friendly_suggestion_text = omnibox::AutocompleteMatchToAccessibilityLabel(
         match, /*header_text=*/u"", display_text,
         OmniboxPopupSelection::kNoMatch,
         controller()->autocomplete_controller()->result().size(),

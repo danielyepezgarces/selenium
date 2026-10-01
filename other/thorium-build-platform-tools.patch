@@ -98,27 +98,34 @@ index 11602df2777ec..d0195fbe1e500 100755
      Also copy over any related files that might be needed
      (pdbs, manifests etc.).
      """
-@@ -27,8 +27,8 @@ def reorder_imports(input_dir, output_dir, architecture):
+@@ -27,8 +27,15 @@ def reorder_imports(input_dir, output_dir, architecture):
      # correct executable in the first place, so that this script
      # only needs to verify that and not write a whole new exe.
  
 -    input_image = os.path.join(input_dir, 'chrome.exe')
 -    output_image = os.path.join(output_dir, 'chrome.exe')
-+    input_image = os.path.join(input_dir, 'thorium.exe')
-+    output_image = os.path.join(output_dir, 'thorium.exe')
++    # Auto-detect target executable name
++    exe_name = 'chrome.exe'
++    for candidate in ('selenium.exe', 'thorium.exe', 'chrome.exe'):
++        if os.path.exists(os.path.join(input_dir, candidate)):
++            exe_name = candidate
++            break
++
++    input_image = os.path.join(input_dir, exe_name)
++    output_image = os.path.join(output_dir, exe_name)
  
      # pefile mmap()s the whole executable, and then parses parts of
      # it into python data structures for ease of processing.
-@@ -90,7 +90,7 @@ def reorder_imports(input_dir, output_dir, architecture):
+@@ -90,7 +97,7 @@ def reorder_imports(input_dir, output_dir, architecture):
  
      pe.write(filename=output_image)
  
 -    for fname in glob.iglob(os.path.join(input_dir, 'chrome.exe.*')):
-+    for fname in glob.iglob(os.path.join(input_dir, 'thorium.exe.*')):
++    for fname in glob.iglob(os.path.join(input_dir, f'{exe_name}.*')):
          shutil.copy(fname, os.path.join(output_dir, os.path.basename(fname)))
      return 0
  
-@@ -99,10 +99,10 @@ def main(argv):
+@@ -99,10 +106,10 @@ def main(argv):
      usage = 'reorder_imports.py -i <input_dir> -o <output_dir> -a <target_arch>'
      parser = optparse.OptionParser(usage=usage)
      parser.add_option(

@@ -42,7 +42,6 @@
 #include "chrome/browser/actor/ui/actor_overlay_web_view.h"
 #include "chrome/browser/app_mode/app_mode_utils.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/download/bubble/download_bubble_prefs.h"
 #include "chrome/browser/browsing_data/browsing_data_important_sites_util.h"
 #include "chrome/browser/desktop_to_mobile_promos/promos_utils.h"
 #include "chrome/browser/devtools/devtools_ui_controller.h"
@@ -55,8 +54,6 @@
 #include "chrome/browser/feature_engagement/tracker_factory.h"
 #include "chrome/browser/glic/public/features.h"
 #include "chrome/browser/headless/headless_mode_util.h"
-#include "chrome/browser/optimization_guide/optimization_guide_keyed_service.h"
-#include "chrome/browser/optimization_guide/optimization_guide_keyed_service_factory.h"
 #include "chrome/browser/platform_util.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_attributes_entry.h"
@@ -88,7 +85,6 @@
 #include "chrome/browser/ui/browser_element_identifiers.h"
 #include "chrome/browser/ui/browser_init_state.h"
 #include "chrome/browser/ui/browser_tabstrip.h"
-#include "chrome/browser/ui/browser_ui_controller/browser_ui_controller.h"
 #include "chrome/browser/ui/browser_window/public/browser_window_features.h"
 #include "chrome/browser/ui/browser_window/public/browser_window_interface.h"
 #include "chrome/browser/ui/browser_window/public/create_browser_window.h"
@@ -97,8 +93,10 @@
 #include "chrome/browser/ui/browser_window_theme_observer.h"
 #include "chrome/browser/ui/color/chrome_color_id.h"
 #include "chrome/browser/ui/dialogs/browser_dialogs.h"
+#include "chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
+#include "chrome/browser/ui/exclusive_access/fullscreen_tab_params.h"
 #include "chrome/browser/ui/find_bar/find_bar.h"
 #include "chrome/browser/ui/focus/browser_focus_controller.h"
 #include "chrome/browser/ui/fullscreen/browser_window_fullscreen_controller.h"
@@ -153,7 +151,6 @@
 #include "chrome/browser/ui/views/bubble_anchor_util_views.h"
 #include "chrome/browser/ui/views/color_provider_browser_helper.h"
 #include "chrome/browser/ui/views/download/download_in_progress_dialog_view.h"
-#include "chrome/browser/ui/views/download/download_shelf_view.h"
 #include "chrome/browser/ui/views/exclusive_access/exclusive_access_bubble_views.h"
 #include "chrome/browser/ui/views/exclusive_access/exclusive_access_bubble_views_context.h"
 #include "chrome/browser/ui/views/extensions/extension_keybinding_registry_views.h"
@@ -167,6 +164,7 @@
 #include "chrome/browser/ui/views/frame/browser_widget.h"
 #include "chrome/browser/ui/views/frame/contents_container_view.h"
 #include "chrome/browser/ui/views/frame/contents_separator.h"
+#include "chrome/browser/ui/views/frame/contents_web_view.h"
 #include "chrome/browser/ui/views/frame/custom_floating_corner.h"
 #include "chrome/browser/ui/views/frame/horizontal_tab_strip_region_view.h"
 #include "chrome/browser/ui/views/frame/layout/browser_view_layout.h"
@@ -192,6 +190,7 @@
 #include "chrome/browser/ui/views/hats/hats_next_web_dialog.h"
 #include "chrome/browser/ui/views/incognito_clear_browsing_data_dialog_coordinator.h"
 #include "chrome/browser/ui/views/infobars/infobar_container_view.h"
+#include "chrome/browser/ui/views/intent_picker_bubble_view.h"
 #include "chrome/browser/ui/views/interaction/browser_elements_views.h"
 #include "chrome/browser/ui/views/interaction/browser_elements_views_impl.h"
 #include "chrome/browser/ui/views/location_bar/location_bar_view.h"
@@ -903,6 +902,14 @@ BrowserView::BrowserView(BrowserWindowInterface* browser)
   SetShowIcon(::ShouldShowWindowIcon(
       browser_.get(), AppUsesWindowControlsOverlay(), AppUsesTabbed()));
 
+  // Layout deferral during startup is only intended for normal browser windows
+  // (which experience redundant layout passes while loading the WebUI toolbar).
+  // Non-normal windows (popups, app windows, etc.) do not use the WebUI toolbar
+  // and must not defer layout while invisible.
+  if (!GetIsNormalType()) {
+    startup_layout_state_ = StartupLayoutState::kDisabled;
+  }
+
   // In forced app mode, all size controls are always disabled. Otherwise, use
   // `create_params` to enable/disable specific size controls.
   if (IsRunningInForcedAppMode()) {
@@ -1025,7 +1032,7 @@ BrowserView::BrowserView(BrowserWindowInterface* browser)
   find_bar_host_view_ = AddChildView(std::make_unique<View>());
 
   window_scrim_view_ = AddChildView(std::make_unique<ScrimView>());
-  window_scrim_view_->layer()->SetName("WindowScrimView");
+  window_scrim_view_->layer()->SetName("BrowserView:WindowScrimView");
 
   side_panel_content_transition_scrim_view_ =
       AddChildView(std::make_unique<ScrimView>(kColorToolbar));
@@ -1081,6 +1088,11 @@ BrowserView::BrowserView(BrowserWindowInterface* browser)
     focus_manager_observation_.Observe(GetFocusManager());
   }
 
+  if (auto* global_error_service =
+          GlobalErrorServiceFactory::GetForProfile(GetProfile())) {
+    global_error_observation_.Observe(global_error_service);
+  }
+
 #if BUILDFLAG(IS_CHROMEOS)
   on_locked_task_subscription_ =
       ash::boca::OnTaskLockedController::From(browser_)
@@ -1101,6 +1113,8 @@ BrowserView::~BrowserView() {
   SetLayoutManager(nullptr);
 
   tab_search_bubble_host_.reset();
+
+  global_error_observation_.Reset();
 
   // Destroy the top controls slide controller first as it depends on the
   // tabstrip model and the browser frame.
@@ -1131,7 +1145,6 @@ BrowserView::~BrowserView() {
   toolbar_ = nullptr;
   top_container_separator_ = nullptr;
   find_bar_host_view_ = nullptr;
-  download_shelf_ = nullptr;
   infobar_container_ = nullptr;
   multi_contents_view_ = nullptr;
   main_shadow_overlay_ = nullptr;
@@ -1201,10 +1214,6 @@ BrowserView* BrowserView::GetBrowserViewForBrowser(
     return nullptr;
   }
   return GetBrowserViewForNativeWindow(browser->GetWindow()->GetNativeWindow());
-}
-
-void BrowserView::SetDownloadShelfForTest(DownloadShelf* download_shelf) {
-  download_shelf_ = download_shelf;
 }
 
 // static
@@ -1325,6 +1334,10 @@ TabStripRegionView* BrowserView::tab_strip_view() const {
   return horizontal_tab_strip_region_view_.get();
 }
 
+ContentsWebView* BrowserView::contents_web_view_for_testing() {
+  return static_cast<ContentsWebView*>(GetContentsView());
+}
+
 views::LabelButton* BrowserView::GetGlicButton() {
   auto* controller = tabs::VerticalTabStripStateController::From(browser_);
   if ((vertical_tab_strip_region_view_ && controller &&
@@ -1366,11 +1379,8 @@ bool BrowserView::GetTabStripVisible() const {
 }
 
 bool BrowserView::ShouldDrawTabStrokes() const {
-  static const bool force_disable_tab_outlines =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          "force-disable-tab-outlines");
 #if BUILDFLAG(IS_CHROMEOS)
-  return !force_disable_tab_outlines;
+  return false;
 #else   // BUILDFLAG(IS_CHROMEOS)
 
   if (web_app::AppBrowserController::From(browser()) &&
@@ -1392,7 +1402,7 @@ bool BrowserView::ShouldDrawTabStrokes() const {
         theme_service->UsingSystemTheme();
   }
 
-  if (!using_system_theme && force_disable_tab_outlines) {
+  if (!using_system_theme) {
     // Strokes are only supported for system themes.
     return false;
   }
@@ -1410,8 +1420,7 @@ bool BrowserView::ShouldDrawTabStrokes() const {
       GetFrameView()->GetFrameColor(BrowserFrameActiveState::kActive);
   const float contrast_ratio =
       color_utils::GetContrastRatio(background_color, frame_color);
-  return contrast_ratio < kMinimumContrastRatioForOutlines ||
-         !force_disable_tab_outlines;
+  return contrast_ratio < kMinimumContrastRatioForOutlines;
 #endif  // !BUILDFLAG(IS_CHROMEOS)
 }
 
@@ -1914,12 +1923,7 @@ void BrowserView::UpdateLoadingAnimations(bool is_visible) {
     std::move(loading_animation_state_change_closure_).Run();
   }
 
-  const bool should_use_timer_driven_animation =
-      should_animate &&
-      (!base::FeatureList::IsEnabled(features::kCompositorLoadingThrobber) ||
-       ShouldShowWindowIcon());
-
-  if (should_use_timer_driven_animation) {
+  if (should_animate) {
     if (!loading_animation_timer_.IsRunning()) {
 #if BUILDFLAG(IS_CHROMEOS)
       loading_animation_tracker_.emplace(
@@ -1940,8 +1944,6 @@ void BrowserView::UpdateLoadingAnimations(bool is_visible) {
       loading_animation_tracker_->Stop();
 #endif
     }
-  }
-  if (!should_animate) {
     // Loads are now complete, update the state if a task was scheduled.
     loading_animation_start_ = base::TimeTicks();
     LoadingAnimationCallback(base::TimeTicks::Now());
@@ -2127,14 +2129,7 @@ void BrowserView::OnTabDetached(content::WebContents* contents,
   }
 
   // This is to unsubscribe the Window Management permission subscriber.
-  if (window_management_subscription_id_) {
-    contents->GetPrimaryMainFrame()
-        ->GetBrowserContext()
-        ->GetPermissionController()
-        ->UnsubscribeFromPermissionResultChange(
-            window_management_subscription_id_.value());
-    window_management_subscription_id_.reset();
-  }
+  window_management_subscription_.reset();
 
   // We need to reset the current tab contents to null before it gets
   // freed. This is because the focus manager performs some operations
@@ -2335,6 +2330,16 @@ LocationBar* BrowserView::GetLocationBar() const {
 
 ui::AcceleratorProvider* BrowserView::GetAcceleratorProvider() {
   return this;
+}
+
+PinnedToolbarActions* BrowserView::GetPinnedToolbarActions() {
+  if (browser_->GetType() != BrowserWindowInterface::Type::TYPE_NORMAL) {
+    return nullptr;
+  }
+  // The provider is registered by the toolbar, so it is absent for windows
+  // that have no toolbar and during window teardown.
+  ToolbarButtonProvider* const provider = toolbar_button_provider();
+  return provider ? provider->GetPinnedToolbarActions() : nullptr;
 }
 
 void BrowserView::SetFocusToLocationBar(bool is_user_initiated) {
@@ -2771,7 +2776,7 @@ void BrowserView::SetWindowManagementPermissionSubscriptionForUnframedMode(
 
   // It is safe to bind base::Unretained(this) because WebContents is
   // owned by BrowserView.
-  window_management_subscription_id_ =
+  window_management_subscription_ =
       controller->SubscribeToPermissionResultChange(
           content::PermissionDescriptorUtil::
               CreatePermissionDescriptorForPermissionType(
@@ -2983,7 +2988,7 @@ void BrowserView::DidFinishNavigation(
     return;
   }
 
-  if (AppUsesUnframedMode() && !window_management_subscription_id_) {
+  if (AppUsesUnframedMode() && !window_management_subscription_) {
     SetWindowManagementPermissionSubscriptionForUnframedMode(
         navigation_handle->GetWebContents());
   }
@@ -3158,50 +3163,6 @@ ShowTranslateBubbleResult BrowserView::ShowTranslateBubble(
                                            : TranslateBubbleView::AUTOMATIC);
 
   return ShowTranslateBubbleResult::kSuccess;
-}
-
-void BrowserView::SetDownloadShelfVisible(bool visible) {
-  DCHECK(download_shelf_);
-  BrowserUiController::From(browser_)->UpdateDownloadShelfVisibility(visible);
-
-  // SetDownloadShelfVisible can force-close the shelf, so make sure we lay out
-  // everything correctly, as if the animation had finished. This doesn't
-  // matter for showing the shelf, as the show animation will do it.
-  ToolbarSizeChanged(false);
-}
-
-bool BrowserView::IsDownloadShelfVisible() const {
-  return download_shelf_ && download_shelf_->IsShowing();
-}
-
-DownloadShelf* BrowserView::GetDownloadShelf() {
-#if BUILDFLAG(IS_CHROMEOS)
-  // ChromeOS uses download notifications instead of the desktop shelf.
-  return nullptr;
-#else
-  // Don't show download shelf if download bubble is enabled, except that the
-  // shelf is already showing (this can happen if prefs were changed at
-  // runtime).
-  if (download::ShouldShowDownloadBubble(browser_->GetProfile()) &&
-      !download_shelf_) {
-    return nullptr;
-  }
-  if (!download_shelf_) {
-    download_shelf_ =
-        AddChildView(std::make_unique<DownloadShelfView>(browser_.get(), this));
-    GetBrowserViewLayout()->set_download_shelf(download_shelf_->GetView());
-    EnsureFocusOrder();
-  }
-  return download_shelf_;
-#endif  // BUILDFLAG(IS_CHROMEOS)
-}
-
-views::View* BrowserView::GetTopContainer() {
-  return top_container_;
-}
-
-views::View* BrowserView::GetLensOverlayView() {
-  return multi_contents_view_->GetViewByID(VIEW_ID_LENS_OVERLAY);
 }
 
 DownloadBubbleUIController* BrowserView::GetDownloadBubbleUIController() {
@@ -3786,6 +3747,9 @@ std::u16string BrowserView::GetAccessibleWindowTitleForChannelAndProfile(
   } else if (profile->IsIncognitoProfile()) {
     title = l10n_util::GetStringFUTF16(
         IDS_ACCESSIBLE_INCOGNITO_WINDOW_TITLE_FORMAT, title);
+  } else if (profile->IsEnterpriseIsolatedModeProfile()) {
+    title = l10n_util::GetStringFUTF16(
+        IDS_ACCESSIBLE_ISOLATED_WINDOW_TITLE_FORMAT, title);
   } else if (!profile->IsOffTheRecord() &&
              profile_manager->GetNumberOfProfiles() > 1) {
     std::u16string profile_name =
@@ -3934,14 +3898,6 @@ void BrowserView::EnsureFocusOrder() {
     infobar_container_->InsertAfterInFocusList(top_container_);
   }
 
-  // We want the download shelf to come after the contents container (which also
-  // contains the debug console, etc.) This prevents it from intruding into the
-  // focus order, but makes it easily accessible by using SHIFT-TAB (reverse
-  // focus traversal) from the toolbar/omnibox.
-  if (download_shelf_ && multi_contents_view_) {
-    download_shelf_->GetView()->InsertAfterInFocusList(multi_contents_view_);
-  }
-
 #if DCHECK_IS_ON()
   // Make sure we didn't create any cycles in the focus order.
   CheckFocusListForCycles(top_container_);
@@ -4014,11 +3970,6 @@ ui::ImageModel BrowserView::GetWindowIcon() {
   if (override_window_icon_resource_id >= 0) {
     return ui::ImageModel::FromImage(
         rb.GetImageNamed(override_window_icon_resource_id));
-  }
-#elif BUILDFLAG(IS_WIN)
-  if (browser_->GetType() == BrowserWindowInterface::Type::TYPE_NORMAL) {
-    ui::ResourceBundle& rb = ui::ResourceBundle::GetSharedInstance();
-    return ui::ImageModel::FromImage(rb.GetImageNamed(IDR_PRODUCT_LOGO_32));
   }
 #endif
 
@@ -4566,9 +4517,6 @@ void BrowserView::GetAccessiblePanes(std::vector<views::View*>* panes) {
   if (side_panel_) {
     panes->push_back(side_panel_);
   }
-  if (download_shelf_) {
-    panes->push_back(download_shelf_->GetView());
-  }
   for (views::View* pane : multi_contents_view_->GetAccessiblePanes()) {
     panes->push_back(pane);
   }
@@ -4583,6 +4531,10 @@ bool BrowserView::ShouldDescendIntoChildForEventHandling(
       web_app::AppBrowserController::From(browser());
   if (AreDraggableRegionsEnabled() && controller &&
       controller->draggable_region().has_value()) {
+    gfx::Point point_in_browser_view_coords(location);
+    views::View::ConvertPointToTarget(GetWidget()->GetRootView(), this,
+                                      &point_in_browser_view_coords);
+
     // Draggable regions are defined relative to the web contents.
     gfx::Point point_in_contents_web_view_coords(location);
     views::View::ConvertPointToTarget(GetWidget()->GetRootView(),
@@ -4594,7 +4546,7 @@ bool BrowserView::ShouldDescendIntoChildForEventHandling(
     return !controller->draggable_region()->contains(
                point_in_contents_web_view_coords.x(),
                point_in_contents_web_view_coords.y()) ||
-           WidgetOwnedByAnchorContainsPoint(point_in_contents_web_view_coords);
+           WidgetOwnedByAnchorContainsPoint(point_in_browser_view_coords);
   }
 
   return true;
@@ -4821,7 +4773,7 @@ int BrowserView::NonClientHitTest(const gfx::Point& point) {
       controller->draggable_region().has_value()) {
     // Draggable regions are defined relative to the web contents.
     gfx::Point point_in_contents_web_view_coords(point_in_browser_view_coords);
-    views::View::ConvertPointToTarget(this, contents_web_view(),
+    views::View::ConvertPointToTarget(this, GetContentsView(),
                                       &point_in_contents_web_view_coords);
 
     if (controller->draggable_region()->contains(
@@ -4900,11 +4852,15 @@ void BrowserView::Layout(PassKey) {
     // safe to skip because the window size has not changed, meaning the initial
     // bounds remain valid.
     //
-    // However, if the active contents container has not yet received its
+    // However, if the window size changed since the last layout pass, do not
+    // defer; child views must be laid out to match the new window size.
+    //
+    // Also, if the active contents container has not yet received its
     // initial non-empty bounds (e.g. during tab restore or when the first tab
     // is added to the window), allow this layout pass so that the web contents
     // gets properly sized before it starts loading.
-    if (size().IsEmpty() || !GetContentsSize().IsEmpty()) {
+    const bool size_changed = size() != last_laid_out_size_;
+    if (!size_changed && (size().IsEmpty() || !GetContentsSize().IsEmpty())) {
       layout_deferred_while_invisible_ = true;
       return;
     }
@@ -4933,8 +4889,8 @@ void BrowserView::Layout(PassKey) {
     // of being a separate popup widget), its layout depends on the position of
     // the `LocationBarView`. We must update its layout after the
     // `BrowserView` layout to ensure it aligns correctly with the location bar.
-    auto* popup_view = toolbar_->location_bar_view()->GetOmniboxPopupView();
-    SafeInvoke(popup_view)
+    SafeInvoke(toolbar_->location_bar())
+        .Then(&LocationBar::GetOmniboxPopupView)
         .Then(&OmniboxPopupView::AsOmniboxPopupViewBrowserView)
         .Then(&OmniboxPopupViewBrowserView::UpdateLayout);
   }
@@ -4994,6 +4950,9 @@ void BrowserView::Layout(PassKey) {
   if (startup_layout_state_ == StartupLayoutState::kInitial) {
     startup_layout_state_ = StartupLayoutState::kDeferring;
   }
+
+  layout_deferred_while_invisible_ = false;
+  last_laid_out_size_ = size();
 }
 
 void BrowserView::OnGestureEvent(ui::GestureEvent* event) {
@@ -5069,8 +5028,8 @@ void BrowserView::AddedToWidget() {
     // of being a separate popup widget), the popup view needs a reference to
     // `BrowserView` to add the popup frame as a child view. We inject it here
     // after the toolbar (and location bar) have been initialized.
-    auto* popup_view = toolbar_->location_bar_view()->GetOmniboxPopupView();
-    SafeInvoke(popup_view)
+    SafeInvoke(toolbar_->location_bar())
+        .Then(&LocationBar::GetOmniboxPopupView)
         .Then(&OmniboxPopupView::AsOmniboxPopupViewBrowserView)
         .Then(&OmniboxPopupViewBrowserView::SetBrowserView, this);
   }
@@ -5338,8 +5297,7 @@ void BrowserView::LoadingAnimationCallback(base::TimeTicks timestamp) {
     return;
   }
 
-  if (GetSupportsTabStrip() &&
-      !base::FeatureList::IsEnabled(features::kCompositorLoadingThrobber)) {
+  if (GetSupportsTabStrip()) {
     // Loading animations are shown in the tab for tabbed windows. Update them
     // even if the tabstrip isn't currently visible so they're in the right
     // state when it returns.
@@ -5435,7 +5393,7 @@ bool BrowserView::MaybeShowBookmarkBar(WebContents* contents) {
 
 bool BrowserView::MaybeShowInfoBar(WebContents* contents) {
   // TODO(beng): Remove this function once the interface between
-  //             InfoBarContainer, DownloadShelfView and WebContents and this
+  //             InfoBarContainer and WebContents and this
   //             view is sorted out.
   return true;
 }
@@ -5580,7 +5538,17 @@ void BrowserView::ProcessFullscreen(bool fullscreen, const int64_t display_id) {
   PrepareFullscreen(fullscreen);
 
   // TODO(b/40276379): Move this out from ProcessFullscreen.
+  // RequestFullscreen() executes lower-layer platform widget and window manager
+  // operations. On some platforms or window configurations, synchronous event
+  // processing during window resize or display transitions can result in window
+  // closure and the destruction of `this`. Capture a WeakPtr to verify that
+  // `this` remains valid before continuing with post-transition processing and
+  // layout updates.
+  base::WeakPtr<BrowserView> weak_this = GetAsWeakPtr();
   RequestFullscreen(fullscreen, display_id);
+  if (!weak_this) {
+    return;
+  }
 
 #if !BUILDFLAG(IS_MAC)
   // On Mac platforms, FullscreenStateChanged() is invoked from
@@ -5970,10 +5938,14 @@ void BrowserView::ShowEmojiPanel() {
   // the emoji panel is non-modal UI that can interfere with the fullscreen
   // bubble. Drop fullscreen when showing the emoji panel to prevent UI
   // spoofing.
+  base::WeakPtr<BrowserView> weak_this = GetAsWeakPtr();
   if (content::WebContents* web_contents = GetActiveWebContents()) {
     if (!web_contents->ForSecurityDropFullscreen(display::kInvalidDisplayId)) {
       return;
     }
+  }
+  if (!weak_this || !GetWidget() || GetWidget()->IsClosed()) {
+    return;
   }
   GetWidget()->ShowEmojiPanel();
 }
@@ -6030,20 +6002,11 @@ Profile* BrowserView::GetProfile() const {
   return browser_->GetProfile();
 }
 
-void BrowserView::UnhideDownloadShelf() {
-  if (download_shelf_) {
-    download_shelf_->Unhide();
-  }
-}
-
-void BrowserView::HideDownloadShelf() {
-  if (download_shelf_) {
-    download_shelf_->Hide();
-  }
-
-  std::vector<StatusBubble*> status_bubbles = GetStatusBubbles();
-  for (StatusBubble* status_bubble : status_bubbles) {
-    status_bubble->Hide();
+void BrowserView::OnGlobalErrorsChanged() {
+  if (auto* provider = toolbar_button_provider()) {
+    if (auto* control = provider->GetAppMenuControl()) {
+      control->CloseMenu();
+    }
   }
 }
 

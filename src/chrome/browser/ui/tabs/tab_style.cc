@@ -25,10 +25,6 @@ namespace {
 constexpr int kSeparatorThickness = 2;
 constexpr int kSeparatorHorizontalMargin = 2;
 constexpr int kSeparatorHeight = 16;
-constexpr int kThoriumSeparatorHorizontalMargin = 0;
-constexpr int kThoriumSeparatorHeight = 20;
-constexpr int kThoriumTabVerticalPadding = 9;
-constexpr int kThoriumTabHorizontalPadding = 6;
 
 
 // The standard tab width is 232 DIP, excluding separators and overlap.
@@ -173,7 +169,7 @@ int TabStyle::GetTopCornerRadius() const {
   if (rectangular_tabs) {
     return 4;
   }
-  return features::IsThorium2024() ? 8 : 10;
+  return 10;
 }
 
 int TabStyle::GetBottomCornerRadius() const {
@@ -182,7 +178,7 @@ int TabStyle::GetBottomCornerRadius() const {
   if (rectangular_tabs) {
     return 4;
   }
-  return features::IsThorium2024() ? 8 : 12;
+  return 12;
 }
 
 int TabStyle::GetTabOverlap() const {
@@ -199,20 +195,10 @@ gfx::Size TabStyle::GetPreviewImageSize() const {
 }
 
 gfx::Size TabStyle::GetSeparatorSize() const {
-  if (features::IsThorium2024()) {
-    return gfx::Size(kSeparatorThickness, kThoriumSeparatorHeight);
-  }
   return gfx::Size(kSeparatorThickness, kSeparatorHeight);
 }
 
 gfx::Insets TabStyle::GetSeparatorMargins() const {
-  if (features::IsThorium2024()) {
-    return gfx::Insets::TLBR(
-        GetLayoutConstant(LayoutConstant::kTabInactivePadding),
-        kThoriumSeparatorHorizontalMargin,
-        GetLayoutConstant(LayoutConstant::kTabInactivePadding),
-        kThoriumSeparatorHorizontalMargin);
-  }
   return gfx::Insets::TLBR(GetLayoutConstant(LayoutConstant::kTabStripPadding),
                            kSeparatorHorizontalMargin,
                            GetLayoutConstant(LayoutConstant::kTabStripPadding),
@@ -395,15 +381,6 @@ SkColor TabStyle::GetCurrentTabBackgroundColor(
 }
 
 gfx::Insets TabStyle::GetContentsInsets() const {
-  if (features::IsThorium2024()) {
-    return gfx::Insets::TLBR(
-        kThoriumTabVerticalPadding +
-            GetLayoutConstant(LayoutConstant::kTabStripPadding),
-        GetBottomCornerRadius() + kThoriumTabHorizontalPadding,
-        kThoriumTabVerticalPadding +
-            GetLayoutConstant(LayoutConstant::kTabStripPadding),
-        GetBottomCornerRadius() + kThoriumTabHorizontalPadding);
-  }
   return gfx::Insets::TLBR(
       GetLayoutConstant(LayoutConstant::kTabVerticalPadding) +
           GetLayoutConstant(LayoutConstant::kTabStripPadding),

@@ -57,6 +57,7 @@
 #include "ui/color/color_provider.h"
 #include "ui/compositor/layer_tree_owner.h"
 #include "ui/compositor/paint_recorder.h"
+#include "ui/views/controls/scroll_view.h"
 #include "ui/views/view.h"
 #include "url/url_constants.h"
 
