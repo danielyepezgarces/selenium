@@ -103,3 +103,12 @@ for d in xtb_dirs:
 print(f"Updated {xtb_count} XTB files.")
 print(f"Total files updated: {total_replaced_files}")
 print(f"Total Thorium replacements: {total_replacements}")
+
+# 4. Inyectar IDs de Selenium en traducciones XTB
+try:
+    import fix_selenium_translations
+    print("\n--- Ejecutando inyeccion de IDs de traduccion GRIT (fix_selenium_translations) ---")
+    fix_selenium_translations.run_fix()
+except Exception as e:
+    print(f"Advertencia al ejecutar fix_selenium_translations: {e}")
+
