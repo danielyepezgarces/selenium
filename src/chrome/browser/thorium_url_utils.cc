@@ -14,7 +14,8 @@ namespace thorium {
 
 GURL CanonicalizeInternalURL(const GURL& url) {
   if (!url.SchemeIs(content::kThoriumUIScheme) &&
-      !url.SchemeIs("thorium")) {
+      !url.SchemeIs("thorium") &&
+      !url.SchemeIs("selenium")) {
     return url;
   }
 
@@ -35,7 +36,7 @@ GURL GetInternalURLForDisplay(const GURL& url) {
   }
 
   GURL::Replacements replacements;
-  replacements.SetSchemeStr(content::kThoriumUIScheme);
+  replacements.SetSchemeStr("selenium");
   return canonical_url.ReplaceComponents(replacements);
 }
 
@@ -71,8 +72,7 @@ std::u16string GetInternalURLTextForDisplay(const GURL& url,
 }
 
 bool IsInternalURLSchemeBrandingEnabled() {
-  return base::FeatureList::IsEnabled(
-      features::kThoriumInternalUrlSchemeBranding);
+  return true;
 }
 
 }  // namespace thorium
