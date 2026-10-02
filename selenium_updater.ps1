@@ -100,9 +100,9 @@ try {
     exit 0
 }
 
-$remoteVersion = $response.version
-$downloadUrl = $response.download_url
-$expectedSha = $response.sha256
+$remoteVersion = if ($response.latest -and $response.latest.version) { $response.latest.version } else { $response.version }
+$downloadUrl = if ($response.latest -and $response.latest.download_url) { $response.latest.download_url } else { $response.download_url }
+$expectedSha = if ($response.latest -and $response.latest.sha256) { $response.latest.sha256 } else { $response.sha256 }
 
 if (-not $remoteVersion -or -not $downloadUrl) {
     Write-Log "Respuesta del servidor invalida o incompleta." "WARN"
