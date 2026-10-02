@@ -22,6 +22,7 @@ selenium*installer*.exe
 # Repository-local packaging output directories.
 /release/
 /test/
+/server_release/*.exe
 /infra/APPIMAGE/out/*
 !/infra/APPIMAGE/out/.gitkeep
 Thorium_squashfs-root/
