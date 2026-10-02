@@ -4,14 +4,11 @@
 
 #include "chrome/browser/ui/views/frame/horizontal_tab_strip_region_view.h"
 
-#include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/functional/bind.h"
 #include "base/task/single_thread_task_runner.h"
 #include "build/build_config.h"
 #include "build/buildflag.h"
-#include "chrome/app/vector_icons/vector_icons.h"
-#include "chrome/browser/geic/geic_enabling.h"
 #include "chrome/browser/glic/public/glic_enabling.h"
 #include "chrome/browser/ui/actions/chrome_action_id.h"
 #include "chrome/browser/ui/browser_actions.h"
@@ -73,7 +70,7 @@
 #include "ui/views/view_utils.h"
 
 #if BUILDFLAG(IS_MAC)
-constexpr int kTabStripRegionInternalPaddingMac = 12;
+inline constexpr int kTabStripRegionInternalPaddingMac = 12;
 #endif
 
 namespace {
@@ -161,8 +158,6 @@ std::unique_ptr<TabStrip> CreateTabStrip(
 HorizontalTabStripRegionViewOld::HorizontalTabStripRegionViewOld(
     BrowserView* browser_view)
     : browser_view_(browser_view),
-      render_combo_button_before_tab_strip_(
-          tabs::IsTabStripComboButtonBeforeTabStrip()),
       action_view_controller_(std::make_unique<views::ActionViewController>()) {
   views::SetCascadingColorProviderColor(
       this, views::kCascadingBackgroundColor,
@@ -173,24 +168,13 @@ HorizontalTabStripRegionViewOld::HorizontalTabStripRegionViewOld(
 
   BrowserWindowInterface* const browser = browser_view->browser();
 
-  std::unique_ptr<TabStripComboButton> combo_button;
   if (browser &&
       (browser->GetType() == BrowserWindowInterface::Type::TYPE_NORMAL)) {
-    combo_button = std::make_unique<TabStripComboButton>(
-        browser, TabStripComboButton::Context::kHorizontalTabStrip);
-    combo_button->SetProperty(views::kCrossAxisAlignmentKey,
-                              views::LayoutAlignment::kCenter);
-    combo_button->SetProperty(
-        views::kMarginsKey,
-        gfx::Insets::TLBR(
-            0, 0, 0,
-            GetLayoutConstant(features::IsThorium2024()
-                                  ? LayoutConstant::kTabSearchPadding
-                                  : LayoutConstant::kTabStripPadding)));
-  }
-
-  if (combo_button && render_combo_button_before_tab_strip_) {
-    combo_button_ = AddChildView(std::move(combo_button));
+    combo_button_ = AddChildView(std::make_unique<TabStripComboButton>(
+        browser, TabStripComboButton::Context::kHorizontalTabStrip));
+    combo_button_->SetProperty(views::kCrossAxisAlignmentKey,
+                               views::LayoutAlignment::kCenter);
+    combo_button_->MaybeShowIPH();
   }
 
   if (base::FeatureList::IsEnabled(features::kTabGroupsFocusing)) {
@@ -226,8 +210,7 @@ HorizontalTabStripRegionViewOld::HorizontalTabStripRegionViewOld(
     // We instantiate the action container if the profile is eligible (even if
     // the button is not currently shown, e.g. when signed out) so that it can
     // dynamically update its visibility when the profile state changes.
-    if (geic::IsGeicEnabled(browser_view->GetProfile()) ||
-        glic::GlicEnabling::IsProfileEligible(browser_view->GetProfile())) {
+    if (glic::GlicEnabling::IsProfileEligible(browser_view->GetProfile())) {
       tab_strip_action_container =
           std::make_unique<TabStripActionContainer>(browser);
       tab_strip_action_container->SetProperty(views::kCrossAxisAlignmentKey,
@@ -250,8 +233,7 @@ HorizontalTabStripRegionViewOld::HorizontalTabStripRegionViewOld(
         std::make_unique<NewTabButton>(
             base::BindRepeating(&TabStrip::NewTabButtonPressed,
                                 base::Unretained(tab_strip_)),
-            features::IsThorium2024() ? vector_icons::kAddOldIcon
-            : features::IsRoundedIconsEnabled()
+            features::IsRoundedIconsEnabled()
                 ? vector_icons::kAddWeight500CustomIcon
                 : vector_icons::kAddOldIcon,
             Edge::kNone, Edge::kNone, browser);
@@ -282,19 +264,9 @@ HorizontalTabStripRegionViewOld::HorizontalTabStripRegionViewOld(
 
   SetProperty(views::kElementIdentifierKey, kTabStripRegionElementId);
 
-  if (combo_button && !render_combo_button_before_tab_strip_) {
-    combo_button_ = AddChildView(std::move(combo_button));
-    combo_button_->SetProperty(
-        views::kMarginsKey,
-        gfx::Insets::TLBR(0, 0, 0,
-                          GetLayoutConstant(LayoutConstant::kTabStripPadding)));
-  }
   if (tab_strip_action_container) {
     tab_strip_action_container_ =
         AddChildView(std::move(tab_strip_action_container));
-  }
-  if (combo_button_) {
-    combo_button_->MaybeShowIPH();
   }
   UpdateTabStripMargin();
 }
@@ -383,9 +355,9 @@ views::View::Views HorizontalTabStripRegionViewOld::GetChildrenInZOrder() {
   return children;
 }
 
-// A leading TabStripComboButton needs bounds that overlap the tab strip, which
-// FlexLayout doesn't currently support. Its bounds are therefore calculated
-// manually.
+// The TabSearchButton need bounds that overlap the TabStripContainer, which
+// FlexLayout doesn't currently support. Because of this the TSB bounds are
+// manually calculated.
 void HorizontalTabStripRegionViewOld::Layout(PassKey) {
   if (!tab_strip_set_) {
     return;
@@ -401,7 +373,7 @@ void HorizontalTabStripRegionViewOld::Layout(PassKey) {
                       GetLayoutConstant(LayoutConstant::kTabStripPadding);
   }
 
-  if (combo_button_ && render_combo_button_before_tab_strip_) {
+  if (combo_button_) {
     AdjustViewBoundsRect(combo_button_, leading_offset);
   }
 
@@ -412,20 +384,14 @@ void HorizontalTabStripRegionViewOld::Layout(PassKey) {
     // negative margins.
     gfx::Size button_size = button_to_paint_to_layer->GetPreferredSize();
 
-    const int tab_button_x_offset =
-        features::IsThorium2024()
-            ? 4
-            : GetLayoutConstant(LayoutConstant::kTabStripPadding);
-
     // The y position is measured from the bottom of the tabstrip, and then
     // padding and button height are removed.
     int x = tab_strip_->bounds().right() -
-            TabStyle::Get()->GetBottomCornerRadius() + tab_button_x_offset +
+            TabStyle::Get()->GetBottomCornerRadius() +
+            GetLayoutConstant(LayoutConstant::kTabStripPadding) +
             GetLayoutConstant(LayoutConstant::kNewTabButtonLeadingMargin);
 
-    gfx::Point button_new_position =
-        gfx::Point(x, GetInsets().top() +
-                          GetLayoutConstant(LayoutConstant::kTabButtonOffset));
+    gfx::Point button_new_position = gfx::Point(x, GetInsets().top());
     gfx::Rect button_new_bounds = gfx::Rect(button_new_position, button_size);
 
     // If the tabsearch button is before the tabstrip container, then manually
@@ -476,14 +442,6 @@ void HorizontalTabStripRegionViewOld::OnDragExited() {
 void HorizontalTabStripRegionViewOld::ChildPreferredSizeChanged(
     views::View* child) {
   PreferredSizeChanged();
-}
-
-bool HorizontalTabStripRegionViewOld::OnMouseWheel(
-    const ui::MouseWheelEvent& event) {
-  if (tab_strip_) {
-    return tab_strip_->OnMouseWheel(event);
-  }
-  return views::AccessiblePaneView::OnMouseWheel(event);
 }
 
 gfx::Size HorizontalTabStripRegionViewOld::GetMinimumSize() const {
@@ -640,8 +598,7 @@ HorizontalTabStripRegionViewOld::GetExpandOnHoverLock(
 }
 
 bool HorizontalTabStripRegionViewOld::HasLeadingButtons() const {
-  if (render_combo_button_before_tab_strip_ && combo_button_ &&
-      combo_button_->GetVisible() &&
+  if (combo_button_ && combo_button_->GetVisible() &&
       ((combo_button_->start_button() &&
         combo_button_->start_button()->GetVisible()) ||
        (combo_button_->end_button() &&
@@ -655,14 +612,10 @@ bool HorizontalTabStripRegionViewOld::HasLeadingButtons() const {
 }
 
 void HorizontalTabStripRegionViewOld::UpdateButtonBorders() {
-  constexpr gfx::Size kThoriumNewTabButtonSize = {28, 28};
-  const int new_tab_button_height = features::IsThorium2024()
-                                        ? kThoriumNewTabButtonSize.height()
-                                        : NewTabButton::kButtonSize.height();
   const int extra_vertical_space =
       GetLayoutConstant(LayoutConstant::kTabStripHeight) -
       GetLayoutConstant(LayoutConstant::kTabstripToolbarOverlap) -
-      new_tab_button_height;
+      NewTabButton::kButtonSize.height();
   const int top_inset = extra_vertical_space / 2;
   const int bottom_inset =
       extra_vertical_space - top_inset +
@@ -721,9 +674,7 @@ void HorizontalTabStripRegionViewOld::UpdateTabStripMargin() {
 
     tab_strip_right_margin =
         button_to_paint_to_layer->GetPreferredSize().width() +
-        GetLayoutConstant(features::IsThorium2024()
-                              ? LayoutConstant::kTabInactivePadding
-                              : LayoutConstant::kTabStripPadding);
+        GetLayoutConstant(LayoutConstant::kTabStripPadding);
   }
 
   // If the tab search button is before the tab strip, it also overlaps the
@@ -737,32 +688,24 @@ void HorizontalTabStripRegionViewOld::UpdateTabStripMargin() {
     unfocus_button_->SetProperty(views::kViewIgnoredByLayoutKey, true);
     current_leading_width +=
         unfocus_button_->GetPreferredSize().width() +
-        GetLayoutConstant(features::IsThorium2024()
-                              ? LayoutConstant::kTabInactivePadding
-                              : LayoutConstant::kTabStripPadding);
+        GetLayoutConstant(LayoutConstant::kTabStripPadding);
   }
 
-  if (render_combo_button_before_tab_strip_ && combo_button_ &&
-      ((combo_button_->start_button() &&
-        combo_button_->start_button()->GetVisible()) ||
-       (combo_button_->end_button() &&
-        combo_button_->end_button()->GetVisible()))) {
+  if (combo_button_ && ((combo_button_->start_button() &&
+                         combo_button_->start_button()->GetVisible()) ||
+                        (combo_button_->end_button() &&
+                         combo_button_->end_button()->GetVisible()))) {
     combo_button_->SetPaintToLayer();
     combo_button_->layer()->SetFillsBoundsOpaquely(false);
     combo_button_->SetProperty(views::kViewIgnoredByLayoutKey, true);
     current_leading_width +=
         combo_button_->GetPreferredSize().width() +
-        GetLayoutConstant(features::IsThorium2024()
-                              ? LayoutConstant::kTabInactivePadding
-                              : LayoutConstant::kTabStripPadding);
+        GetLayoutConstant(LayoutConstant::kTabStripPadding);
   }
 
   if (current_leading_width > 0) {
-    tab_strip_left_margin =
-        current_leading_width +
-        GetLayoutConstant(features::IsThorium2024()
-                              ? LayoutConstant::kTabInactivePadding
-                              : LayoutConstant::kTabStripPadding);
+    tab_strip_left_margin = current_leading_width +
+                            GetLayoutConstant(LayoutConstant::kTabStripPadding);
   }
 
   bool subtract_radius = current_leading_width > 0;
@@ -796,14 +739,10 @@ void HorizontalTabStripRegionViewOld::AdjustViewBoundsRect(View* view,
                                                            int offset) {
   const gfx::Size view_size = view->GetPreferredSize();
   const int x = tab_strip_->x() + TabStyle::Get()->GetBottomCornerRadius() -
-                GetLayoutConstant(features::IsThorium2024()
-                                      ? LayoutConstant::kTabSearchPadding
-                                      : LayoutConstant::kTabStripPadding) -
+                GetLayoutConstant(LayoutConstant::kTabStripPadding) -
                 view_size.width() - offset;
-  const gfx::Rect new_bounds = gfx::Rect(
-      gfx::Point(x, GetInsets().top() +
-                        GetLayoutConstant(LayoutConstant::kTabButtonOffset)),
-      view_size);
+  const gfx::Rect new_bounds =
+      gfx::Rect(gfx::Point(x, GetInsets().top()), view_size);
   view->SetBoundsRect(new_bounds);
 }
 
@@ -843,13 +782,6 @@ HorizontalTabStripRegionViewNew::HorizontalTabStripRegionViewNew(
         browser, TabStripComboButton::Context::kHorizontalTabStrip));
     combo_button_->SetProperty(views::kCrossAxisAlignmentKey,
                                views::LayoutAlignment::kCenter);
-    combo_button_->SetProperty(
-        views::kMarginsKey,
-        gfx::Insets::TLBR(
-            0, GetLayoutConstant(LayoutConstant::kTabStripPadding), 0,
-            GetLayoutConstant(features::IsThorium2024()
-                                  ? LayoutConstant::kTabSearchPadding
-                                  : LayoutConstant::kTabStripPadding)));
 
     if (glic::GlicEnabling::IsProfileEligible(browser_view->GetProfile())) {
       tab_strip_action_container =
@@ -864,7 +796,7 @@ HorizontalTabStripRegionViewNew::HorizontalTabStripRegionViewNew(
         browser, TabStripControlButton::kButtonSize.width(),
         TabStripControlButton::kIconSize,
         TabStripControlButton::kButtonSize.width() / 2.0f);
-    new_tab_button->SetPaintTransparentForGlass(true);
+    new_tab_button->SetPaintTransparent(true);
     new_tab_button_ = AddChildView(std::move(new_tab_button));
     new_tab_button_->SetProperty(views::kCrossAxisAlignmentKey,
                                  views::LayoutAlignment::kCenter);
@@ -942,16 +874,29 @@ views::View::Views HorizontalTabStripRegionViewNew::GetChildrenInZOrder() {
   return children;
 }
 
-void HorizontalTabStripRegionViewNew::Layout(PassKey) {
-  LayoutSuperclass<BaseTabStripRegionView>(this);
+void HorizontalTabStripRegionViewNew::ChildPreferredSizeChanged(
+    views::View* child) {
+  PreferredSizeChanged();
 }
 
-bool HorizontalTabStripRegionViewNew::OnMouseWheel(
-    const ui::MouseWheelEvent& event) {
-  if (tab_strip_view()) {
-    return tab_strip_view()->OnMouseWheel(event);
+bool HorizontalTabStripRegionViewNew::HasLeadingButtons() const {
+  if (combo_button_ && combo_button_->GetVisible() &&
+      ((combo_button_->start_button() &&
+        combo_button_->start_button()->GetVisible()) ||
+       (combo_button_->end_button() &&
+        combo_button_->end_button()->GetVisible()))) {
+    return true;
   }
-  return views::AccessiblePaneView::OnMouseWheel(event);
+  return false;
+}
+
+void HorizontalTabStripRegionViewNew::Layout(PassKey) {
+  UpdateTabStripMargin();
+  LayoutSuperclass<BaseTabStripRegionView>(this);
+
+  if (combo_button_) {
+    AdjustViewBoundsRect(combo_button_, 0);
+  }
 }
 
 gfx::Size HorizontalTabStripRegionViewNew::GetMinimumSize() const {
@@ -1094,16 +1039,18 @@ gfx::Point HorizontalTabStripRegionViewNew::GetLinkDropArrowPosition(
   return gfx::Point(target_x, target_y);
 }
 
-void HorizontalTabStripRegionViewNew::OnTabStripViewSet() {
-  const size_t index =
-      combo_button_ && tabs::IsTabStripComboButtonBeforeTabStrip() ? 1 : 0;
-  ReorderChildView(tab_strip_view(), index);
+void HorizontalTabStripRegionViewNew::AddTabStripView(
+    std::unique_ptr<views::View> view) {
+  view->SetProperty(
+      views::kFlexBehaviorKey,
+      views::FlexSpecification(views::MinimumFlexSizeRule::kScaleToZero,
+                               views::MaximumFlexSizeRule::kPreferred));
+  const size_t index = combo_button_ ? 1 : 0;
+  AddChildViewAt(std::move(view), index);
+  UpdateTabStripMargin();
 }
 
 void HorizontalTabStripRegionViewNew::UpdateButtonBorders() {
-  if (!tab_strip_action_container_) {
-    return;
-  }
   const int extra_vertical_space =
       GetLayoutConstant(LayoutConstant::kTabStripHeight) -
       GetLayoutConstant(LayoutConstant::kTabstripToolbarOverlap) -
@@ -1114,7 +1061,92 @@ void HorizontalTabStripRegionViewNew::UpdateButtonBorders() {
       GetLayoutConstant(LayoutConstant::kTabstripToolbarOverlap);
 
   const auto border_insets = gfx::Insets::TLBR(top_inset, 0, bottom_inset, 0);
-  tab_strip_action_container_->UpdateButtonBorders(border_insets);
+  if (tab_strip_action_container_) {
+    tab_strip_action_container_->UpdateButtonBorders(border_insets);
+  }
+  if (combo_button_) {
+    UpdateBorderInsetsIfNeeded(combo_button_, border_insets);
+  }
+}
+
+void HorizontalTabStripRegionViewNew::UpdateTabStripMargin() {
+#if BUILDFLAG(IS_MAC)
+  if (HasLeadingButtons()) {
+    // When leading buttons are present, maintain a consistent 12px gap from
+    // the caption buttons on Mac.
+    SetProperty(views::kInternalPaddingKey,
+                gfx::Insets::TLBR(0, kTabStripRegionInternalPaddingMac, 0, 0));
+  } else {
+    ClearProperty(views::kInternalPaddingKey);
+  }
+#endif
+
+  std::optional<int> tab_strip_left_margin;
+  int current_leading_width = 0;
+
+  if (combo_button_ && ((combo_button_->start_button() &&
+                         combo_button_->start_button()->GetVisible()) ||
+                        (combo_button_->end_button() &&
+                         combo_button_->end_button()->GetVisible()))) {
+    combo_button_->SetPaintToLayer();
+    combo_button_->layer()->SetFillsBoundsOpaquely(false);
+    combo_button_->SetProperty(views::kViewIgnoredByLayoutKey, true);
+    current_leading_width +=
+        combo_button_->GetPreferredSize().width() +
+        GetLayoutConstant(LayoutConstant::kTabStripPadding);
+  } else if (combo_button_) {
+    combo_button_->ClearProperty(views::kViewIgnoredByLayoutKey);
+  }
+
+  if (current_leading_width > 0) {
+    tab_strip_left_margin = current_leading_width +
+                            GetLayoutConstant(LayoutConstant::kTabStripPadding);
+  }
+
+  bool subtract_radius = current_leading_width > 0;
+#if BUILDFLAG(IS_MAC)
+  const bool is_immersive_mode_enabled =
+      SafeInvoke(browser_view()->browser())
+          .Then(
+              Overload<BrowserWindowInterface*>(&ImmersiveModeController::From))
+          .Then(&ImmersiveModeController::IsEnabled)
+          .value_or(false);
+  if (is_immersive_mode_enabled) {
+    subtract_radius = false;
+  }
+#endif
+
+  if (subtract_radius) {
+    tab_strip_left_margin.value() -= TabStyle::Get()->GetBottomCornerRadius();
+  }
+
+  UpdateButtonBorders();
+
+  if (tab_strip_view()) {
+    if (tab_strip_left_margin.has_value()) {
+      tab_strip_view()->SetProperty(
+          views::kMarginsKey,
+          gfx::Insets::TLBR(0, tab_strip_left_margin.value_or(0), 0, 0));
+    } else {
+      tab_strip_view()->ClearProperty(views::kMarginsKey);
+    }
+  }
+}
+
+void HorizontalTabStripRegionViewNew::AdjustViewBoundsRect(View* view,
+                                                           int offset) {
+  if (!tab_strip_view()) {
+    return;
+  }
+
+  const gfx::Size view_size = view->GetPreferredSize();
+  const int x = tab_strip_view()->x() +
+                TabStyle::Get()->GetBottomCornerRadius() -
+                GetLayoutConstant(LayoutConstant::kTabStripPadding) -
+                view_size.width() - offset;
+  const gfx::Rect new_bounds =
+      gfx::Rect(gfx::Point(x, GetInsets().top()), view_size);
+  view->SetBoundsRect(new_bounds);
 }
 
 BEGIN_METADATA(HorizontalTabStripRegionViewNew)
@@ -1122,12 +1154,6 @@ END_METADATA
 
 std::unique_ptr<TabStripRegionView> CreateHorizontalTabStripRegionView(
     BrowserView* browser_view) {
-  const std::string scrollable =
-      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-          "scrollable-tabstrip");
-  if (scrollable == "disabled" || scrollable == "never" || scrollable == "off") {
-    return std::make_unique<HorizontalTabStripRegionViewOld>(browser_view);
-  }
   if (base::FeatureList::IsEnabled(tabs::kTabStripUnification)) {
     return std::make_unique<HorizontalTabStripRegionViewNew>(browser_view);
   }

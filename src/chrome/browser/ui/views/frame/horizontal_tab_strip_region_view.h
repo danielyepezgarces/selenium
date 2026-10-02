@@ -5,6 +5,8 @@
 #ifndef CHROME_BROWSER_UI_VIEWS_FRAME_HORIZONTAL_TAB_STRIP_REGION_VIEW_H_
 #define CHROME_BROWSER_UI_VIEWS_FRAME_HORIZONTAL_TAB_STRIP_REGION_VIEW_H_
 
+#include <memory>
+
 #include "base/memory/raw_ptr.h"
 #include "build/buildflag.h"
 #include "chrome/browser/ui/tabs/tab_data.h"
@@ -57,7 +59,6 @@ class HorizontalTabStripRegionViewOld : public TabStripRegionView {
   // Calls the parent Layout, but in some cases may also need to manually
   // position the TabSearchButton to layer over the TabStrip.
   void Layout(PassKey) override;
-  bool OnMouseWheel(const ui::MouseWheelEvent& event) override;
 
   // views::AccessiblePaneView:
   void ChildPreferredSizeChanged(views::View* child) override;
@@ -66,6 +67,7 @@ class HorizontalTabStripRegionViewOld : public TabStripRegionView {
   Profile* profile();
 
   TabStrip* tab_strip() { return tab_strip_; }
+  TabStripComboButton* combo_button() { return combo_button_; }
 
   // TabStripRegionView:
   void InitializeTabStrip() override;
@@ -133,8 +135,6 @@ class HorizontalTabStripRegionViewOld : public TabStripRegionView {
   raw_ptr<views::Button> new_tab_button_ = nullptr;
   raw_ptr<TabStripControlButton> unfocus_button_ = nullptr;
 
-  const bool render_combo_button_before_tab_strip_;
-
   std::unique_ptr<views::ActionViewController> action_view_controller_;
   base::CallbackListSubscription unfocus_button_subscription_;
 
@@ -158,9 +158,12 @@ class HorizontalTabStripRegionViewNew : public BaseTabStripRegionView {
   bool IsPositionInWindowCaption(const gfx::Point& point) override;
   views::View::Views GetChildrenInZOrder() override;
   void Layout(PassKey) override;
-  bool OnMouseWheel(const ui::MouseWheelEvent& event) override;
 
-  bool HasLeadingButtons() const { return false; }
+  // views::AccessiblePaneView:
+  void ChildPreferredSizeChanged(views::View* child) override;
+
+  bool HasLeadingButtons() const;
+  TabStripComboButton* combo_button() { return combo_button_; }
 
   // TabStripRegionView:
   gfx::Size GetMinimumSize() const override;
@@ -173,9 +176,11 @@ class HorizontalTabStripRegionViewNew : public BaseTabStripRegionView {
       DropArrow::Direction* direction) override;
 
  private:
-  void OnTabStripViewSet() override;
+  void AddTabStripView(std::unique_ptr<views::View> view) override;
 
   void UpdateButtonBorders();
+  void UpdateTabStripMargin();
+  void AdjustViewBoundsRect(View* view, int offset);
 
   raw_ptr<TabStripActionContainer> tab_strip_action_container_ = nullptr;
   raw_ptr<views::View> reserved_grab_handle_space_ = nullptr;
