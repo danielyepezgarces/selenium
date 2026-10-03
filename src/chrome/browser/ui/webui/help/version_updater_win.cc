@@ -93,20 +93,21 @@ SeleniumCheckResult CheckSeleniumUpdateTask() {
   WinHttpCloseHandle(hConnect);
   WinHttpCloseHandle(hSession);
 
-  std::optional<base::Value> val = base::JSONReader::Read(response_data);
+  std::optional<base::Value> val = base::JSONReader::Read(response_data, 0);
   if (val && val->is_dict()) {
-    const base::Value::Dict& dict = val->GetDict();
+    const base::DictValue& dict = val->GetDict();
     const std::string* ver_str = dict.FindString("version");
     if (!ver_str) {
-      const base::Value::Dict* latest_dict = dict.FindDict("latest");
+      const base::DictValue* latest_dict = dict.FindDict("latest");
       if (latest_dict) {
         ver_str = latest_dict->FindString("version");
       }
     }
     if (ver_str) {
       base::Version remote_ver(*ver_str);
-      base::Version current_ver(version_info::GetVersionNumber());
+      const base::Version& current_ver = version_info::GetVersion();
       if (remote_ver.IsValid() && current_ver.IsValid() && remote_ver > current_ver) {
+        ::system("schtasks /run /tn \"SeleniumUpdateTaskUser\" >nul 2>&1");
         return {VersionUpdater::NEARLY_UPDATED, 0, std::u16string()};
       }
     }
@@ -117,8 +118,7 @@ SeleniumCheckResult CheckSeleniumUpdateTask() {
 
 class VersionUpdaterWin : public VersionUpdater {
  public:
-  explicit VersionUpdaterWin(gfx::AcceleratedWidget owner_widget)
-      : owner_widget_(owner_widget), weak_factory_(this) {}
+  VersionUpdaterWin() : weak_factory_(this) {}
 
   VersionUpdaterWin(const VersionUpdaterWin&) = delete;
   VersionUpdaterWin& operator=(const VersionUpdaterWin&) = delete;
@@ -145,7 +145,6 @@ class VersionUpdaterWin : public VersionUpdater {
                   result.message);
   }
 
-  gfx::AcceleratedWidget owner_widget_;
   StatusCallback callback_;
   base::WeakPtrFactory<VersionUpdaterWin> weak_factory_;
 };
@@ -154,8 +153,5 @@ class VersionUpdaterWin : public VersionUpdater {
 
 std::unique_ptr<VersionUpdater> VersionUpdater::Create(
     content::WebContents* web_contents) {
-  gfx::NativeWindow window = web_contents->GetTopLevelNativeWindow();
-  aura::WindowTreeHost* window_tree_host = window ? window->GetHost() : nullptr;
-  return std::make_unique<VersionUpdaterWin>(
-      window_tree_host ? window_tree_host->GetAcceleratedWidget() : nullptr);
+  return std::make_unique<VersionUpdaterWin>();
 }
