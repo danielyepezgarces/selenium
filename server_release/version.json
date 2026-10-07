@@ -1,30 +1,39 @@
 {
   "name": "Selenium Browser",
-  "version": "157.0.8079.1",
+  "version": "157.0.8079.2",
   "release_date": "2026-10-03",
   "channel": "stable",
-  "download_url": "https://update.dyepezg.dev/dl/selenium/selenium_157.0.8079.1_AVX2_installer.exe",
-  "sha256": "e1c773172efe3b3f0dcab68a2fe1e5988cff7c8e6fc9fbf48af34032a2b6abb0",
-  "size_bytes": 154946560,
-  "notes": "Selenium Browser version 157.0.8079.1 estable.",
+  "download_url": "https://update.dyepezg.dev/dl/selenium/selenium_157.0.8079.2_AVX2_installer.exe",
+  "sha256": "f8b822e2283097b29d2596e51bbaadf23a8045b12900c0ecf33df747e9eb3418",
+  "size_bytes": 154944928,
+  "notes": "Selenium Browser version 157.0.8079.2 estable.",
   "max_stored_versions": 5,
   "latest": {
-    "version": "157.0.8079.1",
+    "version": "157.0.8079.2",
     "release_date": "2026-10-03",
-    "filename": "selenium_157.0.8079.1_AVX2_installer.exe",
-    "download_url": "https://update.dyepezg.dev/dl/selenium/selenium_157.0.8079.1_AVX2_installer.exe",
-    "sha256": "e1c773172efe3b3f0dcab68a2fe1e5988cff7c8e6fc9fbf48af34032a2b6abb0",
-    "size_bytes": 154946560,
-    "notes": "Selenium Browser version 157.0.8079.1 estable."
+    "filename": "selenium_157.0.8079.2_AVX2_installer.exe",
+    "download_url": "https://update.dyepezg.dev/dl/selenium/selenium_157.0.8079.2_AVX2_installer.exe",
+    "sha256": "f8b822e2283097b29d2596e51bbaadf23a8045b12900c0ecf33df747e9eb3418",
+    "size_bytes": 154944928,
+    "notes": "Selenium Browser version 157.0.8079.2 estable."
   },
   "releases": [
+    {
+      "version": "157.0.8079.2",
+      "release_date": "2026-10-03",
+      "filename": "selenium_157.0.8079.2_AVX2_installer.exe",
+      "download_url": "https://update.dyepezg.dev/dl/selenium/selenium_157.0.8079.2_AVX2_installer.exe",
+      "sha256": "f8b822e2283097b29d2596e51bbaadf23a8045b12900c0ecf33df747e9eb3418",
+      "size_bytes": 154944928,
+      "notes": "Selenium Browser version 157.0.8079.2 estable."
+    },
     {
       "version": "157.0.8079.1",
       "release_date": "2026-10-03",
       "filename": "selenium_157.0.8079.1_AVX2_installer.exe",
       "download_url": "https://update.dyepezg.dev/dl/selenium/selenium_157.0.8079.1_AVX2_installer.exe",
-      "sha256": "e1c773172efe3b3f0dcab68a2fe1e5988cff7c8e6fc9fbf48af34032a2b6abb0",
-      "size_bytes": 154946560,
+      "sha256": "f8b822e2283097b29d2596e51bbaadf23a8045b12900c0ecf33df747e9eb3418",
+      "size_bytes": 154944928,
       "notes": "Selenium Browser version 157.0.8079.1 estable."
     }
   ]

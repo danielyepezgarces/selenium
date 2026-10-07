@@ -21,15 +21,18 @@ def get_file_sha256(filepath):
     return h.hexdigest()
 
 def get_exe_version(filepath):
-    try:
-        import win32api
-        info = win32api.GetFileVersionInfo(str(filepath), "\\")
-        ms = info['FileVersionMS']
-        ls = info['FileVersionLS']
-        return f"{win32api.HIWORD(ms)}.{win32api.LOWORD(ms)}.{win32api.HIWORD(ls)}.{win32api.LOWORD(ls)}"
-    except Exception:
-        # Fallback reading VERSION file or string
-        return "157.0.8079.1"
+    version_file = BUILD_OUT.parent.parent / "chrome" / "VERSION"
+    if not version_file.exists():
+        version_file = BASE_DIR / "src" / "chrome" / "VERSION"
+    if version_file.exists():
+        vals = {}
+        for line in version_file.read_text(encoding="utf-8").splitlines():
+            if "=" in line:
+                k, v = line.split("=", 1)
+                vals[k.strip()] = v.strip()
+        if "MAJOR" in vals and "BUILD" in vals:
+            return f"{vals.get('MAJOR','157')}.{vals.get('MINOR','0')}.{vals.get('BUILD','8079')}.{vals.get('PATCH','2')}"
+    return "157.0.8079.2"
 
 def parse_version_tuple(v_str):
     try:
