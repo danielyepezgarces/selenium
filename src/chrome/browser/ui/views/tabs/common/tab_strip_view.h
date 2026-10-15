@@ -135,6 +135,7 @@ class TabStripView final : public views::View,
   bool IsFrameActive() const;
 
   void HideHoverCardOnScroll();
+  void OnScrollButtonsVisibilityChanged();
 
   PrefService* GetPrefs() const;
 
