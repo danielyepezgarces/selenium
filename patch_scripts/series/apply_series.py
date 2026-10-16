@@ -111,7 +111,10 @@ def git_apply_check(apply_dir: Path, patch: Path, reverse: bool = False) -> bool
     if reverse:
         args.append("--reverse")
     cmd = git_apply_command(apply_dir, patch, args)
-    return subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+    if subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+        return True
+    cmd_3way = git_apply_command(apply_dir, patch, ["--3way", *args])
+    return subprocess.run(cmd_3way, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
 
 
 def prepare_temp_index(
@@ -141,15 +144,23 @@ def prepare_temp_index(
 
 
 def git_apply_cached(apply_dir: Path, patch: Path, env: dict[str, str]) -> int:
-    return subprocess.run(
+    ret = subprocess.run(
         git_apply_command(apply_dir, patch, ["--cached"]),
         env=env,
     ).returncode
+    if ret != 0:
+        ret = subprocess.run(
+            git_apply_command(apply_dir, patch, ["--3way", "--cached"]),
+            env=env,
+        ).returncode
+    return ret
 
 
 def git_apply(apply_dir: Path, patch: Path) -> int:
-    cmd = git_apply_command(apply_dir, patch, ["--reject"])
-    return subprocess.run(cmd).returncode
+    ret = subprocess.run(git_apply_command(apply_dir, patch, ["--3way"])).returncode
+    if ret != 0:
+        ret = subprocess.run(git_apply_command(apply_dir, patch, ["--3way", "--reject"])).returncode
+    return ret
 
 
 def validate_entries(entries: list[SeriesEntry], thorium_root: Path, source_tree: Path) -> list[str]:

@@ -1,14 +1,7 @@
 diff --git a/chrome/install_static/chromium_install_modes.h b/chrome/install_static/chromium_install_modes.h
-index a6d969df56d13..92dcb019e5e7b 100644
 --- a/chrome/install_static/chromium_install_modes.h
 +++ b/chrome/install_static/chromium_install_modes.h
-@@ -1,4 +1,4 @@
--// Copyright 2016 The Chromium Authors
-+// Copyright 2026 The Chromium Authors and Alex313031
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file.
- 
-@@ -21,10 +21,10 @@ inline constexpr wchar_t kCompanyPathName[] = L"";
+@@ -20,10 +20,10 @@ inline constexpr wchar_t kCompanyPathName[] = L"";
  
  // The brand-specific product name to be included as a component of the install
  // and user data directory paths.
@@ -47,15 +40,8 @@ index a6d969df56d13..92dcb019e5e7b 100644
              L"{7D2B3E1D-D096-4594-9D8F-A6667F12E0AC}",  // Active Setup
                                                          // GUID.
 diff --git a/chrome/installer/launcher_support/chrome_launcher_support.cc b/chrome/installer/launcher_support/chrome_launcher_support.cc
-index 13154e1cb5f67..fe7c07b924f14 100644
 --- a/chrome/installer/launcher_support/chrome_launcher_support.cc
 +++ b/chrome/installer/launcher_support/chrome_launcher_support.cc
-@@ -1,4 +1,4 @@
--// Copyright 2012 The Chromium Authors
-+// Copyright 2026 The Chromium Authors and Alex313031
- // Use of this source code is governed by a BSD-style license that can be
- // found in the LICENSE file.
- 
 @@ -28,11 +28,11 @@ const wchar_t kUpdateClientsRegKey[] = L"Software\\Google\\Update\\Clients";
  const wchar_t kBrowserAppGuid[] = L"{8A69D345-D564-463c-AFF1-A69D9E530F96}";
  const wchar_t kSxSBrowserAppGuid[] = L"{4ea16ac7-fd5a-47c3-875b-dbf4a2008c20}";

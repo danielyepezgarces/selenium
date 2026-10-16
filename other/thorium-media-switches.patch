@@ -25,16 +25,17 @@ index 3f75c218a35f4..e4f1056ead212 100644
  
  // Enables tracking the occlusion of HW secure encrypted video elements.
  // The HW secure check is OS agnostic, but this switch is currently only
-@@ -1186,7 +1187,7 @@ BASE_FEATURE(kOpenH264SoftwareEncoder, base::FEATURE_ENABLED_BY_DEFAULT);
+@@ -1196,16 +1197,16 @@
  // Otherwise, this feature has no effect and neither encrypted nor clear Dolby
  // Vision is allowed.
  BASE_FEATURE(kAllowClearDolbyVisionInMseWhenPlatformEncryptedDvEnabled,
 -             base::FEATURE_DISABLED_BY_DEFAULT);
 +             base::FEATURE_ENABLED_BY_DEFAULT);
  
- // Enables clear Dolby Vision playback through a pure MFT processor in the GPU
- // process, working together with the D3D11 video decoder.
-@@ -1199,7 +1200,7 @@ BASE_FEATURE(kPlatformEncryptedDolbyVision,
+ // When ENABLE_PLATFORM_ENCRYPTED_DOLBY_VISION is enabled at build time, allow
+ // the support of encrypted Dolby Vision. Have no effect when
+ // ENABLE_PLATFORM_ENCRYPTED_DOLBY_VISION is disabled.
+ BASE_FEATURE(kPlatformEncryptedDolbyVision,
  #if BUILDFLAG(IS_WIN)
               base::FEATURE_ENABLED_BY_DEFAULT
  #else

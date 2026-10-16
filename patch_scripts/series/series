@@ -102,7 +102,7 @@ other/windows-thorium-flags-conf.patch
 # 70 - User-facing flags, defaults, download/security behavior, and ThoriumOS.
 other/add-flag-to-close-window-with-last-tab.patch
 other/add-flag-to-scroll-tabs.patch
-other/enable-ctrl-tab-mru.patch
+# other/enable-ctrl-tab-mru.patch # Already enabled upstream in M158
 other/add-flag-for-double-click-close-tab.patch
 other/add-flag-for-incognito-themes.patch
 other/add-flag-to-hide-extensions-menu.patch

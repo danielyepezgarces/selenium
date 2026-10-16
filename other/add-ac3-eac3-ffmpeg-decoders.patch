@@ -1100,9 +1100,8 @@ index 2a2df78d3e..25de40fef8 100644
    ]
  
    ffmpeg_c_sources += [
-@@ -367,7 +376,8 @@ if ((current_cpu == "x64" && ffmpeg_branding == "Chrome") ||
+@@ -367,6 +376,7 @@ if ((current_cpu == "x64" && ffmpeg_branding == "Chrome") ||
    ffmpeg_c_sources += [
-     "libavcodec/x86/bswapdsp_init.c",
      "libavcodec/x86/hevc/dsp_init.c",
 -    "libavcodec/x86/h26x/h2656dsp.c"
 +    "libavcodec/x86/h26x/h2656dsp.c",

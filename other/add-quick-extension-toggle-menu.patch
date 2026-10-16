@@ -75,24 +75,22 @@ index 5de0ad6e04cc3..eee8ef63e7df9 100644
    virtual void OnReloadPageButtonClicked() = 0;
  
 diff --git a/chrome/browser/ui/ui_features.cc b/chrome/browser/ui/ui_features.cc
-index aa0eabba3fbd3..06f0f3ab93683 100644
 --- a/chrome/browser/ui/ui_features.cc
 +++ b/chrome/browser/ui/ui_features.cc
-@@ -138,6 +138,9 @@ BASE_FEATURE(kLegacySearchIntegrityCheck, base::FEATURE_DISABLED_BY_DEFAULT);
+@@ -155,6 +155,9 @@ BASE_FEATURE(kLegacySearchIntegrityCheck, base::FEATURE_DISABLED_BY_DEFAULT);
+ #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
  
  BASE_FEATURE(kExtensionsCollapseMainMenu, base::FEATURE_DISABLED_BY_DEFAULT);
- 
++
 +BASE_FEATURE(kExtensionsMenuQuickToggle,
 +             base::FEATURE_DISABLED_BY_DEFAULT);
-+
+ 
  // When enabled, newly installed extensions are pinned to the toolbar by
  // default.
- BASE_FEATURE(kExtensionsPinnedByDefault, base::FEATURE_DISABLED_BY_DEFAULT);
 diff --git a/chrome/browser/ui/ui_features.h b/chrome/browser/ui/ui_features.h
-index f3fe2d3004f2f..dc241237b990e 100644
 --- a/chrome/browser/ui/ui_features.h
 +++ b/chrome/browser/ui/ui_features.h
-@@ -73,6 +73,8 @@ bool IsSettingsRefresh2026Enabled();
+@@ -80,6 +80,8 @@ bool ShouldUseActionsForBrowserCommands();
  // the "Discover Chrome Extensions" item will be present.
  BASE_DECLARE_FEATURE(kExtensionsCollapseMainMenu);
  
@@ -102,23 +100,22 @@ index f3fe2d3004f2f..dc241237b990e 100644
  // default.
  BASE_DECLARE_FEATURE(kExtensionsPinnedByDefault);
 diff --git a/chrome/browser/ui/views/extensions/extension_view_utils.cc b/chrome/browser/ui/views/extensions/extension_view_utils.cc
-index a0ce5fc1c9ef8..24f0fadc4abd5 100644
+index 2ae825075ec64..400567dd1bb64 100644
 --- a/chrome/browser/ui/views/extensions/extension_view_utils.cc
 +++ b/chrome/browser/ui/views/extensions/extension_view_utils.cc
-@@ -4,12 +4,24 @@
+@@ -4,6 +4,11 @@
  
  #include "chrome/browser/ui/views/extensions/extension_view_utils.h"
  
 +#include <algorithm>
-+#include <utility>
-+
 +#include "base/i18n/case_conversion.h"
 +#include "base/strings/utf_string_conversions.h"
 +#include "chrome/browser/extensions/extension_service.h"
 +#include "chrome/browser/profiles/profile.h"
- #include "chrome/browser/ui/browser_window/public/browser_window_interface.h"
- #include "chrome/browser/ui/toolbar/toolbar_action_view_model.h"
- #include "chrome/browser/ui/views/extensions/extensions_toolbar_desktop.h"
+ #include <utility>
+ 
+ #include "base/memory/weak_ptr.h"
+@@ -14,6 +19,11 @@
  #include "chrome/browser/ui/views/frame/browser_view.h"
  #include "chrome/browser/ui/views/frame/toolbar_button_provider.h"
  #include "content/public/browser/web_contents.h"
@@ -127,11 +124,11 @@ index a0ce5fc1c9ef8..24f0fadc4abd5 100644
 +#include "extensions/browser/extension_registrar.h"
 +#include "extensions/browser/extension_system.h"
 +#include "extensions/browser/management_policy.h"
+ #include "content/public/browser/web_contents_user_data.h"
  
- ExtensionsContainerViews* GetExtensionsContainerViews(
-     gfx::NativeWindow parent) {
-@@ -22,6 +34,97 @@ ExtensionsContainerViews* GetExtensionsContainerViews(
-                       : nullptr;
+ namespace {
+@@ -86,6 +96,127 @@ ExtensionsContainerViews* GetExtensionsContainerViews(
+   return parent ? GetExtensionsContainerViews(parent) : nullptr;
  }
  
 +ExtensionQuickToggleState::ExtensionQuickToggleState(
@@ -158,63 +155,93 @@ index a0ce5fc1c9ef8..24f0fadc4abd5 100644
 +
 +ExtensionQuickToggleSummary GetExtensionQuickToggleSummary(
 +    const std::vector<ExtensionQuickToggleState>& states) {
-+  bool has_toggleable_extension = false;
-+  bool all_toggleable_extensions_enabled = true;
-+  for (const ExtensionQuickToggleState& state : states) {
++  ExtensionQuickToggleSummary summary;
++  bool has_toggleable = false;
++  bool all_enabled = true;
++  for (const auto& state : states) {
 +    if (!state.can_toggle) {
 +      continue;
 +    }
-+    has_toggleable_extension = true;
-+    all_toggleable_extensions_enabled &= state.enabled;
++    has_toggleable = true;
++    if (!state.enabled) {
++      all_enabled = false;
++    }
 +  }
-+  return {has_toggleable_extension,
-+          has_toggleable_extension && all_toggleable_extensions_enabled};
++  summary.has_toggleable_extension = has_toggleable;
++  summary.all_toggleable_extensions_enabled = has_toggleable && all_enabled;
++  return summary;
 +}
 +
 +void SetExtensionQuickToggleEnabled(Profile* profile,
 +                                    const extensions::ExtensionId& extension_id,
 +                                    bool is_enabled) {
-+  auto* registrar = extensions::ExtensionRegistrar::Get(profile);
++  if (!profile) {
++    return;
++  }
++
++  auto* extension_service =
++      extensions::ExtensionSystem::Get(profile)->extension_service();
++  if (!extension_service) {
++    return;
++  }
++
 +  if (is_enabled) {
-+    registrar->EnableExtension(extension_id);
++    extension_service->EnableExtension(extension_id);
 +  } else {
-+    registrar->DisableExtension(
-+        extension_id, {extensions::disable_reason::DISABLE_USER_ACTION});
++    extension_service->DisableExtension(
++        extension_id, extensions::disable_reason::DISABLE_USER_ACTION);
 +  }
 +}
 +
 +void SetAllExtensionQuickTogglesEnabled(Profile* profile, bool is_enabled) {
-+  for (const ExtensionQuickToggleState& state :
-+       GetExtensionQuickToggleStates(profile)) {
-+    if (!state.can_toggle || state.enabled == is_enabled) {
-+      continue;
++  if (!profile) {
++    return;
++  }
++
++  auto states = GetExtensionQuickToggleStates(profile);
++  for (const auto& state : states) {
++    if (state.can_toggle && state.enabled != is_enabled) {
++      SetExtensionQuickToggleEnabled(profile, state.id, is_enabled);
 +    }
-+    SetExtensionQuickToggleEnabled(profile, state.id, is_enabled);
 +  }
 +}
 +
 +std::vector<ExtensionQuickToggleState> GetExtensionQuickToggleStates(
 +    Profile* profile) {
 +  std::vector<ExtensionQuickToggleState> states;
-+  auto* registry = extensions::ExtensionRegistry::Get(profile);
-+  auto* extension_system = extensions::ExtensionSystem::Get(profile);
-+  auto* extension_service = extension_system->extension_service();
-+  auto* management_policy = extension_system->management_policy();
++  if (!profile) {
++    return states;
++  }
 +
-+  for (const auto& extension : registry->GenerateInstalledExtensionsSet(
-+           extensions::ExtensionRegistry::ENABLED |
-+           extensions::ExtensionRegistry::DISABLED |
-+           extensions::ExtensionRegistry::TERMINATED)) {
-+    if (!extension->is_extension()) {
++  auto* extension_system = extensions::ExtensionSystem::Get(profile);
++  auto* extension_registry =
++      extensions::ExtensionRegistry::Get(profile);
++  if (!extension_system || !extension_registry) {
++    return states;
++  }
++
++  auto* management_policy = extension_system->management_policy();
++  extensions::ExtensionList all_extensions;
++  for (const auto& extension : extension_registry->enabled_extensions()) {
++    all_extensions.push_back(extension);
++  }
++  for (const auto& extension : extension_registry->disabled_extensions()) {
++    all_extensions.push_back(extension);
++  }
++
++  for (const auto& extension : all_extensions) {
++    if (!extension->is_extension() && !extension->is_app()) {
 +      continue;
 +    }
 +
-+    const bool is_enabled =
-+        registry->enabled_extensions().Contains(extension->id()) ||
-+        registry->terminated_extensions().Contains(extension->id());
-+    const bool can_toggle =
-+        is_enabled ? extension_service->UserCanDisableInstalledExtension(
-+                         extension->id())
++    bool is_enabled =
++        extension_registry->enabled_extensions().Contains(extension->id());
++    bool can_toggle =
++        !management_policy
++            ? true
++            : is_enabled
++                   ? !management_policy->MustRemainEnabled(extension.get(),
++                                                           nullptr)
 +                   : !management_policy->MustRemainDisabled(extension.get(),
 +                                                            nullptr);
 +    states.emplace_back(extension->id(), extension->name(), is_enabled,
@@ -229,25 +256,24 @@ index a0ce5fc1c9ef8..24f0fadc4abd5 100644
  // action's image. The icon displayed should be the "product" icon and not the
  // "action" action based on the web contents.
 diff --git a/chrome/browser/ui/views/extensions/extension_view_utils.h b/chrome/browser/ui/views/extensions/extension_view_utils.h
-index 56f0cbe009a9e..20a9727adf213 100644
+index 7ddeb2c42a9eb..03132af7084af 100644
 --- a/chrome/browser/ui/views/extensions/extension_view_utils.h
 +++ b/chrome/browser/ui/views/extensions/extension_view_utils.h
-@@ -5,9 +5,14 @@
- #ifndef CHROME_BROWSER_UI_VIEWS_EXTENSIONS_EXTENSION_VIEW_UTILS_H_
- #define CHROME_BROWSER_UI_VIEWS_EXTENSIONS_EXTENSION_VIEW_UTILS_H_
+@@ -8,7 +8,13 @@
+ #include "base/memory/weak_ptr.h"
+ #include "ui/gfx/native_ui_types.h"
  
 +#include <string>
 +#include <vector>
 +
 +#include "extensions/common/extension_id.h"
- #include "ui/gfx/native_ui_types.h"
- 
++
  class ExtensionsContainerViews;
 +class Profile;
  class ToolbarActionViewModel;
  
  namespace content {
-@@ -18,6 +23,40 @@ namespace ui {
+@@ -19,6 +25,40 @@ namespace ui {
  class ImageModel;
  }
  
@@ -285,9 +311,9 @@ index 56f0cbe009a9e..20a9727adf213 100644
 +std::vector<ExtensionQuickToggleState> GetExtensionQuickToggleStates(
 +    Profile* profile);
 +
- // Returns the extensions toolbar container in `parent`, if existent.
- ExtensionsContainerViews* GetExtensionsContainerViews(gfx::NativeWindow parent);
- 
+ // Sets an override `ExtensionsContainerViews` for `web_contents`. When set,
+ // `GetExtensionsContainerViews(content::WebContents*)` returns this container
+ // instead of the browser toolbar's container.
 diff --git a/chrome/browser/ui/views/extensions/extensions_menu_delegate_desktop.cc b/chrome/browser/ui/views/extensions/extensions_menu_delegate_desktop.cc
 index 751dee5efd9d3..b8741b8811b6f 100644
 --- a/chrome/browser/ui/views/extensions/extensions_menu_delegate_desktop.cc

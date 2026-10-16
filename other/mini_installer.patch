@@ -1770,18 +1770,16 @@ index d8d444e685734..6e89bcf29c761 100644
  
    HKEY root_key() const { return root_key_; }
 diff --git a/chrome/installer/setup/launch_chrome.cc b/chrome/installer/setup/launch_chrome.cc
-index a5d073d214b6e..2448ea0a3bb69 100644
+index 858eb502f635d..9e66bedad5566 100644
 --- a/chrome/installer/setup/launch_chrome.cc
 +++ b/chrome/installer/setup/launch_chrome.cc
-@@ -24,19 +24,29 @@ base::CommandLine GetPostInstallLaunchCommand(
- }
+@@ -25,18 +25,26 @@ base::CommandLine GetPostInstallLaunchCommand(
  
  bool LaunchChromeBrowser(const base::FilePath& application_path) {
--  if (application_path.empty())
-+  if (application_path.empty()) {
+   if (application_path.empty()) {
 +    LOG(ERROR) << __func__ << ": application_path is empty";
      return false;
-+  }
+   }
  
 -  return base::LaunchProcess(GetPostInstallLaunchCommand(application_path),
 -                             base::LaunchOptions())
@@ -1800,15 +1798,12 @@ index a5d073d214b6e..2448ea0a3bb69 100644
  bool LaunchChromeAndWait(const base::FilePath& application_path,
                           const base::CommandLine& options,
                           int32_t* exit_code) {
--  if (application_path.empty())
-+  if (application_path.empty()) {
+   if (application_path.empty()) {
 +    LOG(ERROR) << __func__ << ": application_path is empty";
      return false;
-+  }
+   }
  
-   base::CommandLine cmd(application_path.Append(kChromeExe));
-   cmd.AppendArguments(options, false);
-@@ -48,10 +58,11 @@ bool LaunchChromeAndWait(const base::FilePath& application_path,
+@@ -50,10 +58,11 @@ bool LaunchChromeAndWait(const base::FilePath& application_path,
                           << "Failed to launch: " << cmd.GetCommandLineString();
                       return false;
                     });
