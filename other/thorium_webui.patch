@@ -2,14 +2,14 @@ diff --git a/chrome/browser/ui/webui/BUILD.gn b/chrome/browser/ui/webui/BUILD.gn
 index 2a4eae8943e6a..e783d6d51d8c6 100644
 --- a/chrome/browser/ui/webui/BUILD.gn
 +++ b/chrome/browser/ui/webui/BUILD.gn
-@@ -35,6 +35,7 @@ source_set("configs") {
-     "chrome_untrusted_web_ui_configs.h",
+@@ -38,6 +38,7 @@ source_set("configs") {
+   sources = [
+     "chrome_untrusted_web_ui_configs.cc",
      "chrome_web_ui_configs.cc",
-     "chrome_web_ui_configs.h",
 +    "thorium_easter_eggs.h",
    ]
  
-   configs += [ "//build/config/compiler:wexit_time_destructors" ]
+   deps = [
 diff --git a/chrome/browser/ui/webui/chrome_web_ui_configs.cc b/chrome/browser/ui/webui/chrome_web_ui_configs.cc
 index 62b07dca08345..9c247ea22eb26 100644
 --- a/chrome/browser/ui/webui/chrome_web_ui_configs.cc
