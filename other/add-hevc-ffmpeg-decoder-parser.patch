@@ -1490,6 +1490,7 @@ index ba2c2b2584..d509c1b154 100644
      (use_linux_config && current_cpu == "x86" && ffmpeg_branding == "Chrome")) {
 +  ffmpeg_c_sources += [
 +    "libavcodec/x86/hevc/dsp_init.c",
++    "libavcodec/x86/hevc/pred_init.c",
 +    "libavcodec/x86/h26x/h2656dsp.c"
 +  ]
 +
@@ -1499,6 +1500,7 @@ index ba2c2b2584..d509c1b154 100644
 +    "libavcodec/x86/hevc/dequant.asm",
 +    "libavcodec/x86/hevc/idct.asm",
 +    "libavcodec/x86/hevc/mc.asm",
++    "libavcodec/x86/hevc/pred.asm",
 +    "libavcodec/x86/hevc/sao.asm",
 +    "libavcodec/x86/hevc/sao_10bit.asm",
 +    "libavcodec/x86/h26x/h2656_inter.asm"
