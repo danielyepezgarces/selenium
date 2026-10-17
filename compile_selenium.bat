@@ -1,5 +1,5 @@
 @echo off
-title Selenium Build & Management Center (AVX2 + Helium)
+title Selenium Build and Management Center (AVX2 + Helium)
 color 0B
 
 :: ==============================================================================
@@ -34,7 +34,7 @@ if not "%1"=="" (
 cls
 color 0B
 echo ==============================================================================
-echo           CONTROL & BUILD CENTER: SELENIUM BROWSER
+echo           CONTROL AND BUILD CENTER: SELENIUM BROWSER
 echo ==============================================================================
 echo.
 echo  Select an option:
