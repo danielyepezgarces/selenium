@@ -157,9 +157,11 @@ def git_apply_cached(apply_dir: Path, patch: Path, env: dict[str, str]) -> int:
 
 
 def git_apply(apply_dir: Path, patch: Path) -> int:
-    ret = subprocess.run(git_apply_command(apply_dir, patch, ["--3way"])).returncode
+    ret = subprocess.run(git_apply_command(apply_dir, patch, [])).returncode
     if ret != 0:
-        ret = subprocess.run(git_apply_command(apply_dir, patch, ["--3way", "--reject"])).returncode
+        ret = subprocess.run(git_apply_command(apply_dir, patch, ["--3way"])).returncode
+    if ret != 0:
+        ret = subprocess.run(git_apply_command(apply_dir, patch, ["--reject"])).returncode
     return ret
 
 

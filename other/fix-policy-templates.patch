@@ -1,5 +1,4 @@
 diff --git a/components/policy/tools/template_writers/writer_configuration.py b/components/policy/tools/template_writers/writer_configuration.py
-index 4a4dc51a09cca..661b63e0a9205 100755
 --- a/components/policy/tools/template_writers/writer_configuration.py
 +++ b/components/policy/tools/template_writers/writer_configuration.py
 @@ -24,45 +24,7 @@ def GetConfigurationForBuild(defines):

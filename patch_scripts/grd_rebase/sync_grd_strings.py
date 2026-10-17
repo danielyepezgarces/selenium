@@ -1088,12 +1088,6 @@ def insert_new_translations(
                 insertion.new_translation_id
             )
             if existing_new_translation is not None:
-                existing_block = existing_new_translation[0]
-                if existing_block != insertion.new_block:
-                    raise ValueError(
-                        "translation ID already exists with different content: "
-                        f"{insertion.new_translation_id} in {chromium_path}"
-                    )
                 continue
 
             anchor_count = len(anchor_spans.get(insertion.anchor_block, ()))
