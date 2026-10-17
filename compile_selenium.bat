@@ -95,9 +95,8 @@ echo ===========================================================================
 echo.
 
 cd /d "%SRC_DIR%"
-:: Close running instances so files (.pak / .dll) are not locked
-taskkill /F /IM selenium.exe >nul 2>&1
-taskkill /F /IM thorium.exe >nul 2>&1
+:: Close running instances from out\thorium so files (.pak / .dll) are not locked
+powershell -NoProfile -Command "Get-Process selenium,thorium -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*out\thorium*' } | Stop-Process -Force" >nul 2>&1
 
 :: Clear TARGET environment variable to prevent conflict with rust bindgen
 set TARGET=
