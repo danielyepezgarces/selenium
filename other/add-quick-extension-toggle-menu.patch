@@ -179,16 +179,15 @@ index 2ae825075ec64..400567dd1bb64 100644
 +    return;
 +  }
 +
-+  auto* extension_service =
-+      extensions::ExtensionSystem::Get(profile)->extension_service();
-+  if (!extension_service) {
++  auto* extension_registrar = extensions::ExtensionRegistrar::Get(profile);
++  if (!extension_registrar) {
 +    return;
 +  }
 +
 +  if (is_enabled) {
-+    extension_service->EnableExtension(extension_id);
++    extension_registrar->EnableExtension(extension_id);
 +  } else {
-+    extension_service->DisableExtension(
++    extension_registrar->DisableExtension(
 +        extension_id, extensions::disable_reason::DISABLE_USER_ACTION);
 +  }
 +}
