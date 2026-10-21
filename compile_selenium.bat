@@ -101,7 +101,9 @@ powershell -NoProfile -Command "Get-Process selenium,thorium -ErrorAction Silent
 :: Clear TARGET environment variable to prevent conflict with rust bindgen
 set TARGET=
 
-call C:\src\depot_tools\autoninja.bat -C out\thorium -local_jobs 8 -k 0 %BUILD_TARGET%
+if "%NINJA_JOBS%"=="" set NINJA_JOBS=8
+
+call C:\src\depot_tools\autoninja.bat -C out\thorium -local_jobs %NINJA_JOBS% -k 0 %BUILD_TARGET%
 
 if %ERRORLEVEL% EQU 0 (
     echo.
