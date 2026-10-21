@@ -13,6 +13,7 @@ set PATH=C:\src\depot_tools;C:\Program Files\Git\cmd;C:\Users\Daniel Yepez Garce
 set SRC_DIR=C:\src\chromium\src
 set OUT_DIR=C:\src\chromium\src\out\thorium
 set CMD_MODE=0
+if not "%1"=="" set "CMD_MODE=1"
 set TARGET=
 
 :: Process command line argument directly if provided
@@ -136,7 +137,7 @@ if %ERRORLEVEL% EQU 0 (
 )
 
 echo.
-if "%CMD_MODE%"=="1" exit /b 0
+if not "%CMD_MODE%"=="0" exit /b %ERRORLEVEL%
 pause
 goto :MENU
 
@@ -149,7 +150,7 @@ echo ===========================================================================
 cd /d "%SRC_DIR%"
 call C:\src\depot_tools\autoninja.bat -C out\thorium -n chrome
 echo.
-if "%CMD_MODE%"=="1" exit /b 0
+if not "%CMD_MODE%"=="0" exit /b %ERRORLEVEL%
 pause
 goto :MENU
 
@@ -171,7 +172,7 @@ if exist "%OUT_DIR%\.ninja_lock" (
 echo.
 echo  Ready! Build environment is completely unlocked.
 echo.
-if "%CMD_MODE%"=="1" exit /b 0
+if not "%CMD_MODE%"=="0" exit /b %ERRORLEVEL%
 pause
 goto :MENU
 
@@ -186,5 +187,5 @@ if exist "selenium.exe" (
     if "%CMD_MODE%"=="1" exit /b 1
     pause
 )
-if "%CMD_MODE%"=="1" exit /b 0
+if not "%CMD_MODE%"=="0" exit /b %ERRORLEVEL%
 goto :MENU
