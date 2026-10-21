@@ -188,7 +188,7 @@ index 2ae825075ec64..400567dd1bb64 100644
 +    extension_registrar->EnableExtension(extension_id);
 +  } else {
 +    extension_registrar->DisableExtension(
-+        extension_id, extensions::disable_reason::DISABLE_USER_ACTION);
++        extension_id, {extensions::disable_reason::DISABLE_USER_ACTION});
 +  }
 +}
 +
