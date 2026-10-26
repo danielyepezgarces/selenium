@@ -1100,17 +1100,19 @@ index 2a2df78d3e..25de40fef8 100644
    ]
  
    ffmpeg_c_sources += [
-@@ -367,6 +376,7 @@ if ((current_cpu == "x64" && ffmpeg_branding == "Chrome") ||
+@@ -367,7 +377,8 @@ if ((current_cpu == "x64" && ffmpeg_branding == "Chrome") ||
    ffmpeg_c_sources += [
      "libavcodec/x86/hevc/dsp_init.c",
+     "libavcodec/x86/hevc/pred_init.c",
 -    "libavcodec/x86/h26x/h2656dsp.c"
 +    "libavcodec/x86/h26x/h2656dsp.c",
 +    "libavcodec/x86/ac3dsp_init.c",
    ]
  
    ffmpeg_asm_sources += [
-@@ -379,7 +389,9 @@ if ((current_cpu == "x64" && ffmpeg_branding == "Chrome") ||
+@@ -379,8 +390,10 @@ if ((current_cpu == "x64" && ffmpeg_branding == "Chrome") ||
      "libavcodec/x86/hevc/mc.asm",
+     "libavcodec/x86/hevc/pred.asm",
      "libavcodec/x86/hevc/sao.asm",
      "libavcodec/x86/hevc/sao_10bit.asm",
 -    "libavcodec/x86/h26x/h2656_inter.asm"
