@@ -61,12 +61,11 @@ index fcacae3add97e..83d1fee3c5901 100644
  // Use of this source code is governed by a BSD-style license that can be
  // found in the LICENSE file.
  
-@@ -90,6 +90,8 @@ static const char* GetAllowedDemuxers() {
-                                                  "flac", "mp3",      "mov"};
+@@ -88,6 +88,6 @@ FFmpegGlue::FFmpegGlue(FFmpegURLProtocol* protocol) {
+   static constexpr const char* kAllowedDemuxers =
+       "ogg,matroska,wav,flac,mp3,mov"
  #if BUILDFLAG(USE_PROPRIETARY_CODECS)
-     allowed_demuxers.push_back("aac");
-+    allowed_demuxers.push_back("ac3");
-+    allowed_demuxers.push_back("eac3");
+-      ",aac"
++      ",aac,ac3,eac3"
  #endif
-     return base::JoinString(allowed_demuxers, ",");
-   }());
+       ;
