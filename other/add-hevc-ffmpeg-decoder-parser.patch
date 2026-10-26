@@ -1484,7 +1484,7 @@ index ba2c2b2584..d509c1b154 100644
    ffmpeg_c_sources += [
      "libavcodec/aom_film_grain.c",
      "libavcodec/atsc_a53.c",
-@@ -353,6 +368,22 @@ if (((current_cpu == "arm64" || current_cpu == "arm64e") &&
+@@ -353,6 +368,24 @@ if (((current_cpu == "arm64" || current_cpu == "arm64e") &&
  if ((current_cpu == "x64" && ffmpeg_branding == "Chrome") ||
      (is_win && current_cpu == "x86" && ffmpeg_branding == "Chrome") ||
      (use_linux_config && current_cpu == "x86" && ffmpeg_branding == "Chrome")) {
