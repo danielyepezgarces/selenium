@@ -8,13 +8,15 @@ index c027a43eb3e88..06606eb01c6ea 100644
  // Use of this source code is governed by a BSD-style license that can be
  // found in the LICENSE file.
  
-@@ -77,6 +77,7 @@
+@@ -73,6 +73,7 @@
+ #include "components/variations/service/variations_network_clock.h"
+ #include "components/variations/variations_ids_provider.h"
  #include "components/version_info/channel.h"
 +#include "components/version_info/version_info.h"
  #include "content/public/app/initialize_mojo_core.h"
- 
-@@ -687,14 +687,13 @@ void InitLogging(const std::string& process_type) {
-       *base::CommandLine::ForCurrentProcess();
+ #include "content/public/common/content_client.h"
+ #include "content/public/common/content_constants.h"
+@@ -754,12 +755,11 @@ void InitLogging(const std::string& process_type) {
    logging::InitChromeLogging(command_line, file_state);
  
 -#if BUILDFLAG(IS_CHROMEOS)
