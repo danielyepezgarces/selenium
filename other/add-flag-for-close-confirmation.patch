@@ -2,7 +2,7 @@ diff --git a/chrome/app/generated_resources.grd b/chrome/app/generated_resources
 index c0c13e8cc740b..cb4c4f8d3589e 100644
 --- a/chrome/app/generated_resources.grd
 +++ b/chrome/app/generated_resources.grd
-@@ -15397,6 +15397,10 @@ Please help our engineers fix this problem. Tell us what happened right before y
+@@ -15600,6 +15600,10 @@ Please help our engineers fix this problem. Tell us what happened right before y
          </message>
        </if>
  
@@ -64,65 +64,41 @@ index fd25e44754e13..993bbf39d6011 100644
    }
  
    DCHECK(!warn_before_closing_callback_)
-@@ -1050,6 +1060,67 @@ bool UnloadController::CanCloseWithInProgressDownloads() {
+@@ -1045,6 +1055,43 @@ bool UnloadController::CanCloseWithInProgressDownloads() {
    return false;
  }
  
 +bool UnloadController::CanCloseWithMultipleTabs() {
-+  const base::CommandLine* command_line =
-+      base::CommandLine::ForCurrentProcess();
-+  if (!command_line->HasSwitch("close-confirmation")) {
++  // Flag for tab close confirmation
++  const base::CommandLine& command_line =
++      *base::CommandLine::ForCurrentProcess();
++  const bool close_confirmation = command_line.HasSwitch("close-confirmation");
++  const std::string close_confirmation_value =
++      command_line.GetSwitchValueASCII("close-confirmation");
++  const bool close_window_confirmation =
++      command_line.HasSwitch("close-window-confirmation");
++
++  if (!close_confirmation && !close_window_confirmation) {
++    return true;
++  }
++  if (close_confirmation && (close_confirmation_value != "window" &&
++                             close_confirmation_value != "all")) {
 +    return true;
 +  }
 +
-+  if (close_multitab_confirmation_state_ !=
-+      CancelDownloadConfirmationState::kNotPrompted) {
-+    return close_multitab_confirmation_state_ !=
-+           CancelDownloadConfirmationState::kWaitingForResponse;
-+  }
-+
-+  if (!g_browser_process->profile_manager()) {
++  if (close_multitab_confirmation_state_ ==
++      CancelDownloadConfirmationState::kResponseReceived) {
 +    return true;
 +  }
 +
-+  const int tab_count = browser_->tab_strip_model()->count();
-+  if (tab_count == 0) {
++  if (browser_->tab_strip_model()->count() <= 1) {
 +    return true;
 +  }
 +
-+  int total_window_count = 0;
-+  ForEachCurrentBrowserWindowInterfaceOrderedByActivation(
-+      [&total_window_count, this](BrowserWindowInterface* browser) {
-+        if (browser != browser_ &&
-+            !browser->capabilities()->IsAttemptingToCloseBrowser()) {
-+          ++total_window_count;
-+        }
-+        return true;
-+      });
-+
-+  const std::string flag_value =
-+      command_line->GetSwitchValueASCII("close-confirmation");
-+  if (flag_value == "last") {
-+    if (total_window_count >= 1 || tab_count <= 1) {
-+      return true;
-+    }
-+  } else if (flag_value == "multiple") {
-+    if (total_window_count == 0) {
-+      return true;
-+    }
-+  } else if (flag_value != "any") {
-+    return true;
-+  }
-+
-+  close_multitab_confirmation_state_ =
-+      CancelDownloadConfirmationState::kWaitingForResponse;
-+
-+  MessageBoxDialog::Show(
-+      BrowserWindow::FromBrowser(browser_)->GetNativeWindow(),
-+      l10n_util::GetStringUTF16(IDS_CONFIRM_CLOSE_WINDOW), std::u16string(),
-+      chrome::MESSAGE_BOX_TYPE_QUESTION,
-+      l10n_util::GetStringUTF16(IDS_APP_CLOSE),
-+      l10n_util::GetStringUTF16(IDS_APP_CANCEL), std::u16string(),
++  chrome::ShowQuestionMessageBox(
++      browser_->window()->GetNativeWindow(),
++      l10n_util::GetStringUTF16(IDS_PRODUCT_NAME),
++      l10n_util::GetStringUTF16(IDS_CONFIRM_CLOSE_WINDOW),
 +      base::BindOnce(&UnloadController::MultitabResponse,
 +                     weak_factory_.GetWeakPtr()));
 +
@@ -132,8 +108,9 @@ index fd25e44754e13..993bbf39d6011 100644
  base::WeakPtr<UnloadController> UnloadController::GetWeakPtr() {
    return weak_factory_.GetWeakPtr();
  }
-@@ -1077,6 +1148,21 @@ void UnloadController::InProgressDownloadResponse(bool cancel_downloads) {
-       .Run(WarnBeforeClosingResult::kDoNotClose);
+@@ -1110,7 +1161,22 @@ void UnloadController::InProgressDownloadResponse(bool cancel_downloads) {
+   // in-progress.
+   chrome::ShowDownloads(browser_);
  }
  
 +void UnloadController::MultitabResponse(chrome::MessageBoxResult result) {
@@ -158,14 +135,6 @@ diff --git a/chrome/browser/ui/unload_controller.h b/chrome/browser/ui/unload_co
 index ebaf48d0abac9..edd93ac370c86 100644
 --- a/chrome/browser/ui/unload_controller.h
 +++ b/chrome/browser/ui/unload_controller.h
-@@ -16,6 +16,7 @@
- #include "chrome/browser/tab_contents/web_contents_collection.h"
- #include "chrome/browser/ui/browser_window/public/browser_window_interface.h"
- #include "chrome/browser/ui/download_close_type.h"
-+#include "chrome/browser/ui/simple_message_box.h"
- #include "chrome/browser/ui/tabs/tab_strip_model_observer.h"
- #include "ui/base/unowned_user_data/scoped_unowned_user_data.h"
- 
 @@ -260,6 +261,9 @@ class UnloadController : public WebContentsCollection::Observer,
    // Returns true if the window can close, false otherwise.
    bool CanCloseWithInProgressDownloads();
