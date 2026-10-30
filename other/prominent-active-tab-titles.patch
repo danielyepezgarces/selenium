@@ -1,8 +1,8 @@
 diff --git a/chrome/browser/ui/views/tabs/tab.cc b/chrome/browser/ui/views/tabs/tab.cc
-index de060ada24258..33c9dbac3c165 100644
+index 5db520967f4e2..5bd63f260e9f2 100644
 --- a/chrome/browser/ui/views/tabs/tab.cc
 +++ b/chrome/browser/ui/views/tabs/tab.cc
-@@ -363,6 +363,7 @@ Tab::Tab(tabs::TabHandle handle, TabSlotController* controller)
+@@ -368,6 +368,7 @@ Tab::Tab(tabs::TabHandle handle, TabSlotController* controller)
    SetID(VIEW_ID_TAB);
  
    AddChildViewRaw(title_.get());
@@ -10,7 +10,7 @@ index de060ada24258..33c9dbac3c165 100644
  
    SetEventTargeter(std::make_unique<views::ViewTargeter>(this));
  
-@@ -1069,6 +1070,7 @@ void Tab::ActiveStateChanged() {
+@@ -1081,6 +1082,7 @@ void Tab::ActiveStateChanged() {
    icon_->SetActiveState(IsActive());
    alert_indicator_button_->OnParentTabButtonColorChanged();
    alert_indicator_button_->UpdateEnabledForMuteToggle();
