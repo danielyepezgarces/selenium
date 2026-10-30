@@ -215,14 +215,16 @@ index 830f84198c02f..94a0f5ea026a6 100644
  # Use of this source code is governed by a BSD-style license that can be
  # found in the LICENSE file.
  
-@@ -2348,8 +2348,8 @@ test("content_browsertests") {
-       "../renderer/render_view_browsertest_mac.mm",
+@@ -2395,8 +2395,8 @@ test("content_browsertests") {
+     deps += [
+       "//components/remote_cocoa/app_shim",
+       "//third_party/ocmock",
      ]
-     deps += [ "//third_party/ocmock" ]
 -    data_deps += [ "//content/shell:content_shell" ]
 -    data += [ "$root_out_dir/Content Shell.app/" ]
 +    data_deps += [ "//content/shell:thorium_shell" ]
 +    data += [ "$root_out_dir/Thorium Shell.app/" ]
      frameworks = [ "ScreenCaptureKit.framework" ]
    }
+
  
