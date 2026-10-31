@@ -20,7 +20,7 @@ from typing import Sequence
 
 
 EXIT_FAILURE = 111
-OVERLAY_COMPONENTS = ("chrome", "components", "content", "third_party", "ui")
+OVERLAY_COMPONENTS = ("build", "chrome", "components", "content", "third_party", "ui")
 PAK_METADATA_FILES = ("README.chromium", "LICENSE", "OWNERS")
 GRD_SYNC_CONFIG_OPTIONS = (
     ("--file-allowlist", "file_allowlist.csv"),
