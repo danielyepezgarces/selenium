@@ -127,7 +127,7 @@ index 2ae825075ec64..400567dd1bb64 100644
  #include "content/public/browser/web_contents_user_data.h"
  
  namespace {
-@@ -86,6 +96,127 @@ ExtensionsContainerViews* GetExtensionsContainerViews(
+@@ -86,6 +96,126 @@ ExtensionsContainerViews* GetExtensionsContainerViews(
    return parent ? GetExtensionsContainerViews(parent) : nullptr;
  }
  
