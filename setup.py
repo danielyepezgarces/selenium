@@ -112,6 +112,11 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         metavar="PATH",
         help="Thorium repository root (default: THOR_DIR or ~/thorium)",
     )
+    parser.add_argument(
+        "--skip-patches",
+        action="store_true",
+        help="Skip applying the patch series (e.g. if already applied)",
+    )
     profiles = parser.add_mutually_exclusive_group()
     profiles.add_argument(
         "--mac",
@@ -644,7 +649,12 @@ def validate_inputs(
         require_file(config / filename, "GRD rebase configuration")
 
 
-def setup(thorium_root: Path, chromium_src: Path, profile: str) -> None:
+def setup(
+    thorium_root: Path,
+    chromium_src: Path,
+    profile: str,
+    skip_patches: bool = False,
+) -> None:
     thorium_root = thorium_root.expanduser().resolve()
     chromium_src = chromium_src.expanduser().resolve()
 
@@ -680,7 +690,8 @@ def setup(thorium_root: Path, chromium_src: Path, profile: str) -> None:
         write_setup_manifest(manifest, pending_files)
     clean_stale_managed_files(chromium_src, previous_files, current_files)
 
-    apply_patch_series(thorium_root, chromium_src, profile)
+    if not skip_patches:
+        apply_patch_series(thorium_root, chromium_src, profile)
 
     print("\nCopying Thorium source overlays over the Chromium tree")
     execute_copy_plan(base_plan)
@@ -705,7 +716,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     args = parse_args(sys.argv[1:] if argv is None else argv)
     try:
-        setup(args.thorium_root, args.chromium_src, args.profile)
+        setup(
+            args.thorium_root,
+            args.chromium_src,
+            args.profile,
+            skip_patches=args.skip_patches,
+        )
     except SetupError as error:
         print(f"{Path(sys.argv[0]).name}: {error}", file=sys.stderr)
         return EXIT_FAILURE
