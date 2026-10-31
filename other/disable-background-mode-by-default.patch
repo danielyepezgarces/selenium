@@ -8,12 +8,12 @@ index 1fa1ad93461e5..1a8e16981a8f3 100644
  // Use of this source code is governed by a BSD-style license that can be
  // found in the LICENSE file.
  
-@@ -348,7 +348,7 @@ BackgroundModeManager::~BackgroundModeManager() {
+@@ -357,7 +357,7 @@ BackgroundModeManager::~BackgroundModeManager() {
  
  // static
  void BackgroundModeManager::RegisterPrefs(PrefRegistrySimple* registry) {
 -  registry->RegisterBooleanPref(prefs::kBackgroundModeEnabled, true);
 +  registry->RegisterBooleanPref(prefs::kBackgroundModeEnabled, false);
- }
- 
- void BackgroundModeManager::RegisterProfile(Profile* profile) {
+ #if BUILDFLAG(IS_LINUX)
+   registry->RegisterBooleanPref(prefs::kBackgroundModePortalAutostartGranted,
+                                 false);
