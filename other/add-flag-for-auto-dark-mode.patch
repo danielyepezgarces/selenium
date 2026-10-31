@@ -95,14 +95,13 @@ index 34b2acb5146fa..5384302cdf858 100644
  // Use of this source code is governed by a BSD-style license that can be
  // found in the LICENSE file.
  
-@@ -41,6 +41,10 @@ class NativeThemeGtk : public ui::NativeThemeBase {
-       const gfx::Rect& rect,
+@@ -43,6 +43,7 @@ class NativeThemeGtk : public ui::NativeThemeBase {
        const FrameTopAreaExtraParams& extra_params) const override;
  
-+ protected:
-+  // ui::NativeTheme:
+  protected:
 +  void OnToolkitSettingsChanged(bool force_notify) override;
-+
-  private:
-   friend class base::NoDestructor<NativeThemeGtk>;
+   // ui::NativeTheme:
+   PreferredColorScheme CalculatePreferredColorScheme() const override;
+ 
+
  
