@@ -1431,7 +1431,7 @@ void Tab::UpdateIconVisibility() {
         should_show_close_button && large_enough_for_close_button &&
         !(declutter_eligible &&
           available_width <=
-              TabStyle::kTabStripDeclutterMaxTabWidthForCloseHide);
+              features::kTabStripDeclutterMaxTabWidthForCloseHide.Get());
     if (showing_close_button_) {
       available_width -= close_button_width;
     }

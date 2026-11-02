@@ -35,6 +35,7 @@ index fd25e44754e13..993bbf39d6011 100644
 +#include "chrome/grit/generated_resources.h"
 +#include "chrome/grit/branded_strings.h"
 +#include "chrome/browser/ui/simple_message_box.h"
++#include "ui/base/base_window.h"
 +#include "ui/base/l10n/l10n_util.h"
 +#include "ui/strings/grit/ui_strings.h"
  
@@ -97,8 +98,8 @@ index fd25e44754e13..993bbf39d6011 100644
 +    return true;
 +  }
 +
-+  chrome::ShowQuestionMessageBox(
-+      browser_->GetNativeWindow(),
++  chrome::ShowQuestionMessageBoxAsync(
++      browser_->GetWindow()->GetNativeWindow(),
 +      l10n_util::GetStringUTF16(IDS_PRODUCT_NAME),
 +      l10n_util::GetStringUTF16(IDS_CONFIRM_CLOSE_WINDOW),
 +      base::BindOnce(&UnloadController::MultitabResponse,

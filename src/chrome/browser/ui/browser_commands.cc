@@ -687,22 +687,22 @@ tabs::TabInterface* GetTabAndRevertIfNecessaryHelper(
   WebContents* current_contents = current_tab->GetContents();
 
   switch (disposition) {
-    case WindowOpenDisposition::NEW_FOREGROUND_TAB:
-    case WindowOpenDisposition::NEW_BACKGROUND_TAB: {
+    case WindowOpenDisposition::kNewForegroundTab:
+    case WindowOpenDisposition::kNewBackgroundTab: {
       std::unique_ptr<WebContents> new_tab = current_contents->Clone();
       WebContents* raw_new_tab = new_tab.get();
-      if (disposition == WindowOpenDisposition::NEW_BACKGROUND_TAB) {
+      if (disposition == WindowOpenDisposition::kNewBackgroundTab) {
         new_tab->WasHidden();
       }
       browser->GetTabStripModel()->AddWebContents(
           std::move(new_tab), -1, ui::PAGE_TRANSITION_LINK,
-          (disposition == WindowOpenDisposition::NEW_FOREGROUND_TAB)
+          (disposition == WindowOpenDisposition::kNewForegroundTab)
               ? AddTabTypes::ADD_ACTIVE
               : AddTabTypes::ADD_NONE,
           current_tab->GetGroup());
       return browser->GetTabStripModel()->GetTabForWebContents(raw_new_tab);
     }
-    case WindowOpenDisposition::NEW_WINDOW: {
+    case WindowOpenDisposition::kNewWindow: {
       std::unique_ptr<WebContents> new_tab = current_contents->Clone();
       WebContents* raw_new_tab = new_tab.get();
       BrowserWindowInterface* new_browser = CreateBrowserWindow(
@@ -990,7 +990,7 @@ BrowserWindowInterface* OpenEmptyWindow(Profile* profile,
   BrowserWindowInterface* browser = CreateBrowserWindow(std::move(params));
   if (auto* manager = InitialWebUIWindowMetricsManager::From(browser)) {
     manager->SetWindowCreationInfo(
-        waap::NewWindowCreationSource::kBrowserInitiated, now);
+        waap::NewWindowCreationSource::kNewEmptyWindow, now);
   }
 
   // Startup tabs could be created during browser creation. Add an empty tab
@@ -1184,7 +1184,7 @@ void ReloadBypassingCache(BrowserWindowInterface* browser,
 bool CanReload(const BrowserWindowInterface* browser) {
   return browser &&
          browser->GetType() != BrowserWindowInterface::TYPE_DEVTOOLS &&
-         browser->GetType() != BrowserWindowInterface::TYPE_PICTURE_IN_PICTURE;
+         browser->GetType() != BrowserWindowInterface::Type::TYPE_FLOATING;
 }
 
 void Home(BrowserWindowInterface* browser, WindowOpenDisposition disposition) {
@@ -1217,8 +1217,8 @@ void Home(BrowserWindowInterface* browser, WindowOpenDisposition disposition) {
     url = extensions::AppLaunchInfo::GetLaunchWebURL(extension);
   }
 
-  if (disposition == WindowOpenDisposition::CURRENT_TAB ||
-      disposition == WindowOpenDisposition::NEW_FOREGROUND_TAB) {
+  if (disposition == WindowOpenDisposition::kCurrentTab ||
+      disposition == WindowOpenDisposition::kNewForegroundTab) {
     extensions::MaybeShowExtensionControlledHomeNotification(
         browser, browser->GetTabStripModel()->GetActiveWebContents());
   }
@@ -1322,7 +1322,7 @@ void NewWindow(BrowserWindowInterface* browser) {
       launch_container = apps::LaunchContainer::kLaunchContainerTab;
     }
     apps::AppLaunchParams params = apps::AppLaunchParams(
-        app_id, launch_container, WindowOpenDisposition::NEW_WINDOW,
+        app_id, launch_container, WindowOpenDisposition::kNewWindow,
         apps::LaunchSource::kFromKeyboard);
     web_app::LaunchExtensionOrWebApp(profile, std::move(params),
                                      base::DoNothing());
@@ -1334,7 +1334,7 @@ void NewWindow(BrowserWindowInterface* browser) {
   const extensions::Extension* extension = GetExtensionForBrowser(browser);
   if (extension && extension->is_hosted_app()) {
     const auto app_launch_params = CreateAppLaunchParamsUserContainer(
-        profile, extension, WindowOpenDisposition::NEW_WINDOW,
+        profile, extension, WindowOpenDisposition::kNewWindow,
         apps::LaunchSource::kFromKeyboard);
     OpenApplicationWindow(
         profile, app_launch_params,
@@ -1740,10 +1740,7 @@ void MoveTabsToNewWindow(BrowserWindowInterface* browser,
   } else {
     new_browser = CreateNewBrowser(browser, true);
   }
-  if (auto* manager = InitialWebUIWindowMetricsManager::From(new_browser)) {
-    manager->SetWindowCreationInfo(
-        waap::NewWindowCreationSource::kBrowserInitiated, now);
-  }
+
 
   MoveTabsToWindowImpl(browser, new_browser, tab_indices);
 }
@@ -1800,7 +1797,7 @@ void DuplicateSplit(BrowserWindowInterface* browser,
 }
 
 bool CanDuplicateTabAt(const BrowserWindowInterface* browser, int index) {
-  if (browser->GetType() == BrowserWindowInterface::TYPE_PICTURE_IN_PICTURE ||
+  if (browser->GetType() == BrowserWindowInterface::Type::TYPE_FLOATING ||
       browser->GetType() == BrowserWindowInterface::TYPE_APP_POPUP ||
       browser->GetType() == BrowserWindowInterface::TYPE_DEVTOOLS) {
     return false;
@@ -2876,10 +2873,8 @@ void OpenUpdateChromeDialog(BrowserWindowInterface* browser) {
                               /*auto_update_enabled=*/false);
   } else {
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
-    if (base::FeatureList::IsEnabled(features::kFewerUpdateConfirmations)) {
-      chrome::AttemptRelaunch();
-      return;
-    }
+    chrome::AttemptRelaunch();
+    return;
 #endif
     base::RecordAction(UserMetricsAction("UpdateChrome"));
     BrowserWindow::FromBrowser(browser)->ShowUpdateChromeDialog();
