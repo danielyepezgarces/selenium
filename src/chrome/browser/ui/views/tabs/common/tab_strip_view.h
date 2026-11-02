@@ -7,6 +7,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
+#include "chrome/browser/ui/views/tabs/shared/tab_strip_types.h"
 #include "components/prefs/pref_change_registrar.h"
 #include "components/tabs/public/tab_interface.h"
 #include "ui/base/metadata/metadata_header_macros.h"
@@ -50,6 +51,9 @@ class TabStripView final : public views::View,
   TabScrollButtonContainer* GetScrollButtonContainer() const;
   bool IsTabScrollButtonsPinned() const;
 
+  int leading_overlap() const { return leading_overlap_; }
+  void SetLeadingOverlap(int leading_overlap);
+
   views::ScrollView* pinned_tabs_scroll_view() const {
     return pinned_tabs_scroll_view_;
   }
@@ -72,6 +76,7 @@ class TabStripView final : public views::View,
   // views::WidgetObserver:
   void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
 
+  void OnChildCountChanged();
   void OnChildMoved(TabCollectionNode* moved_node);
   void OnTabChanged(const tabs::TabInterface* active_tab);
 
@@ -130,22 +135,19 @@ class TabStripView final : public views::View,
   gfx::Rect GetBoundsInScrollViewContents(views::View* view,
                                           views::ScrollView* scroll_view);
 
-  void UpdateColors();
-
-  bool IsFrameActive() const;
-
   void HideHoverCardOnScroll();
   void OnScrollButtonsVisibilityChanged();
+  bool ShouldHideSeparators() const;
+  void UpdateSeparatorVisibility();
 
   PrefService* GetPrefs() const;
-
-  // Updates the main-axis space allocated for unpinned tabs (e.g. total
-  // available tab strip width minus pinned container width in horizontal mode).
-  void SetAvailableUnpinnedSpace(views::SizeBound space) const;
+  void UpdateColors();
+  bool IsFrameActive() const;
 
   friend class TabStripViewLayout;
 
   PrefChangeRegistrar pref_change_registrar_;
+  const TabStripOrientation orientation_;
   raw_ptr<TabCollectionNode> collection_node_ = nullptr;
   raw_ptr<views::ScrollView> pinned_tabs_scroll_view_ = nullptr;
   raw_ptr<PinnedTabContainerView> pinned_tabs_container_view_ = nullptr;
@@ -154,6 +156,8 @@ class TabStripView final : public views::View,
   raw_ptr<UnpinnedTabContainerView> unpinned_tabs_container_view_ = nullptr;
   raw_ptr<TabScrollButtonContainer> tab_scroll_button_container_ = nullptr;
   bool is_collapsed_ = false;
+  bool are_separators_hidden_ = false;
+  int leading_overlap_ = 0;
 
   // Used for seek time metrics from the time the mouse enters the tabstrip.
   std::optional<base::TimeTicks> mouse_entered_tabstrip_time_;
@@ -170,7 +174,6 @@ class TabStripView final : public views::View,
       unpinned_tab_scrollable_state_recorder_;
 
   base::CallbackListSubscription node_destroyed_subscription_;
-  base::CallbackListSubscription paint_as_active_subscription_;
   std::vector<base::CallbackListSubscription> callback_subscriptions_;
 
   base::ScopedObservation<views::Widget, views::WidgetObserver>
