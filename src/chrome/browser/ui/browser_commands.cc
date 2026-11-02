@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 #include "chrome/browser/ui/browser_commands.h"
+#include "components/contextual_tasks/public/contextual_task.h"
+#include "chrome/browser/ui/omnibox/omnibox_next_features.h"
+#include "chrome/browser/ui/views/scheduled_restart/scheduled_restart_bubble_controller.h"
 
 #include <algorithm>
 #include <memory>
@@ -2859,11 +2862,7 @@ void ShowAvatarMenu(BrowserWindowInterface* browser) {
       /*is_source_accelerator=*/true);
 }
 
-// TODO(crbug.com/345770406): Rename the function name.
-// We removed the extra confirmation step in the Chrome update flow. After the
-// full rollout of the code, this name will be misleading. We will clean up the
-// code and its related source enums.
-void OpenUpdateChromeDialog(BrowserWindowInterface* browser) {
+void MaybeUpdateChrome(BrowserWindowInterface* browser) {
   UpgradeDetector* detector = UpgradeDetector::GetInstance();
   if (detector->is_outdated_install()) {
     ShowOutdatedUpgradeBubble(browser, browser,
@@ -2874,12 +2873,22 @@ void OpenUpdateChromeDialog(BrowserWindowInterface* browser) {
   } else {
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
     chrome::AttemptRelaunch();
-    return;
-#endif
+#else
     base::RecordAction(UserMetricsAction("UpdateChrome"));
     BrowserWindow::FromBrowser(browser)->ShowUpdateChromeDialog();
+#endif
   }
 }
+
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
+void OpenScheduledRestartDialog(BrowserWindowInterface* browser) {
+  if (auto* controller =
+          scheduled_restart::ScheduledRestartBubbleController::From(
+              g_browser_process)) {
+    controller->ShowBubbleFromAppMenu(browser);
+  }
+}
+#endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 
 bool CanRequestTabletSite(WebContents* current_tab) {
   return current_tab &&
@@ -3165,13 +3174,26 @@ void ExecLensRegionSearch(BrowserWindowInterface* browser) {
 #endif  // BUILDFLAG(ENABLE_LENS_DESKTOP_GOOGLE_BRANDED_FEATURES)
 }
 
-void ExecAskGoogleAboutThisPage(BrowserWindowInterface* browser) {
+void ExecAskGoogleAboutThisPage(
+    BrowserWindowInterface* browser,
+    lens::LensOverlayInvocationSource invocation_source,
+    omnibox::ChromeAimEntryPoint entry_point) {
 #if !BUILDFLAG(IS_ANDROID)
   if (!browser) {
     return;
   }
-  if (contextual_tasks::kContextualTasksContextMenuRouteAskGoogleToOmnibox
-          .Get()) {
+  base::UmaHistogramEnumeration("ContextualTasks.AskGoogle.Invoked",
+                                invocation_source);
+  if (auto* const user_education =
+          BrowserUserEducationInterface::From(browser)) {
+    user_education->NotifyNewBadgeFeatureUsed(
+        contextual_tasks::kContextualTasksUpdatedEntryPoints);
+  }
+  // Only route to the omnibox if the window has an AIM popup to show;
+  // otherwise the popup state becomes kAim with nothing shown. Fall back to
+  // the side panel.
+  if (contextual_tasks::ShouldRouteAskGoogleToOmnibox(browser->GetProfile()) &&
+      omnibox::ShouldCreateAimPopupPresenter(browser->GetProfile())) {
     BrowserWindow* window = BrowserWindow::FromBrowser(browser);
     LocationBar* location_bar = window ? window->GetLocationBar() : nullptr;
     OmniboxController* omnibox_controller =
@@ -3189,10 +3211,8 @@ void ExecAskGoogleAboutThisPage(BrowserWindowInterface* browser) {
   LensSearchController* const controller =
       LensSearchController::From(active_tab);
   if (controller) {
-    controller->StartZeroStateSessionInSidePanel(
-        omnibox::ChromeAimEntryPoint::DESKTOP_CHROME_COBROWSE_OMNIBOX_ACTION,
-        lens::LensOverlayInvocationSource::kContentAreaContextMenuPage,
-        /*open_lens_overlay=*/false);
+    controller->StartZeroStateSessionInSidePanel(entry_point, invocation_source,
+                                                 /*open_lens_overlay=*/false);
   }
 #endif
 }
