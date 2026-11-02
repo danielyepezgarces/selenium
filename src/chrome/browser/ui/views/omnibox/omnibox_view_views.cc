@@ -224,7 +224,7 @@ OmniboxViewViews::OmniboxViewViews(bool popup_window_mode,
   GetViewAccessibility().AddHTMLAttributes(std::make_pair("type", "url"));
   // Expose keyboard shortcut where it makes sense.
 #if BUILDFLAG(IS_MAC)
-  GetViewAccessibility().SetKeyShortcuts("âŒ˜L");
+  GetViewAccessibility().SetKeyShortcuts("⌘L");
 #else
   GetViewAccessibility().SetKeyShortcuts("Ctrl+L");
 #endif
@@ -1551,12 +1551,7 @@ bool OmniboxViewViews::OnMousePressed(const ui::MouseEvent& event) {
       // between the first and second click, causing the wrong word to be
       // selected because it's based on the click position in the newly unelided
       // URL. See https://crbug.com/40693090.
-      if (base::StartsWith(*text, u"chrome://", base::CompareCase::INSENSITIVE_ASCII)) {
-    *text = u"selenium://" + text->substr(9);
-  } else if (base::StartsWith(*text, u"thorium://", base::CompareCase::INSENSITIVE_ASCII)) {
-    *text = u"selenium://" + text->substr(10);
-  }
-  if (IsSelectAll()) {
+      if (IsSelectAll()) {
         SelectWordAt(event.location());
         const std::u16string shown_url = GetText();
         const std::u16string full_url =
@@ -2433,6 +2428,11 @@ void OmniboxViewViews::HandleCutOrCopyAdjustments(
   bool write_url = false;
   controller()->edit_model()->AdjustTextForCopy(GetSelectedRange().GetMin(),
                                                 text, &url, &write_url);
+  if (base::StartsWith(*text, u"chrome://", base::CompareCase::INSENSITIVE_ASCII)) {
+    *text = u"selenium://" + text->substr(9);
+  } else if (base::StartsWith(*text, u"thorium://", base::CompareCase::INSENSITIVE_ASCII)) {
+    *text = u"selenium://" + text->substr(10);
+  }
   if (IsSelectAll()) {
     UMA_HISTOGRAM_COUNTS_1M(OmniboxEditModel::kCutOrCopyAllTextHistogram, 1);
 
