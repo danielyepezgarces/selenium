@@ -11,8 +11,8 @@ BASE_DIR = Path(__file__).resolve().parent
 BUILD_OUT = Path(r"C:\src\chromium\src\out\thorium")
 DIST_DIR = BASE_DIR / "server_release"
 
-# URL base para dl.dyepezg.dev
-SERVER_BASE_URL = "https://dl.dyepezg.dev/selenium"
+# URL base para el servidor de actualizaciones y descargas
+SERVER_BASE_URL = os.environ.get("SELENIUM_RELEASE_URL", "https://update.dyepezg.dev/dl/selenium")
 MAX_RELEASES = 5  # Maximo de instaladores historicos a conservar (1 GB aprox.)
 CERT_THUMBPRINT = "A935C06DDDB0A3D3D757D3E6535514BD02AF9A41"
 SIGNTOOL_PATH = r"C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe"
