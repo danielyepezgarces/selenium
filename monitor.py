@@ -375,7 +375,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 const statusDot = document.getElementById('status-dot');
                 const statusText = document.getElementById('status-text');
 
-                if (isRunning) {
+                if (data.completed) {
+                    statusDot.className = 'status-dot active';
+                    statusText.style.color = 'var(--accent-green)';
+                    statusText.innerText = 'Compilación completada exitosamente';
+                } else if (isRunning) {
                     statusDot.className = 'status-dot active';
                     statusText.style.color = 'var(--accent-green)';
                     statusText.innerText = 'Compilando activamente';
