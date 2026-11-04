@@ -1,23 +1,32 @@
 {
   "name": "Selenium Browser",
-  "version": "157.0.8079.2",
-  "release_date": "2026-10-03",
+  "version": "159.0.8133.1",
+  "release_date": "2026-11-03",
   "channel": "stable",
-  "download_url": "https://update.dyepezg.dev/dl/selenium/selenium_157.0.8079.2_AVX2_installer.exe",
-  "sha256": "f8b822e2283097b29d2596e51bbaadf23a8045b12900c0ecf33df747e9eb3418",
-  "size_bytes": 154944928,
-  "notes": "Selenium Browser version 157.0.8079.2 estable.",
+  "download_url": "https://update.dyepezg.dev/dl/selenium/selenium_159.0.8133.1_AVX2_installer.exe",
+  "sha256": "4971864acfcbc7319aa43e37cbb88c16b56c6daadb280fee3f910f85789779a4",
+  "size_bytes": 160221944,
+  "notes": "Selenium Browser version 159.0.8133.1 estable (Chromium M159, AVX2 + Helium).",
   "max_stored_versions": 5,
   "latest": {
-    "version": "157.0.8079.2",
-    "release_date": "2026-10-03",
-    "filename": "selenium_157.0.8079.2_AVX2_installer.exe",
-    "download_url": "https://update.dyepezg.dev/dl/selenium/selenium_157.0.8079.2_AVX2_installer.exe",
-    "sha256": "f8b822e2283097b29d2596e51bbaadf23a8045b12900c0ecf33df747e9eb3418",
-    "size_bytes": 154944928,
-    "notes": "Selenium Browser version 157.0.8079.2 estable."
+    "version": "159.0.8133.1",
+    "release_date": "2026-11-03",
+    "filename": "selenium_159.0.8133.1_AVX2_installer.exe",
+    "download_url": "https://update.dyepezg.dev/dl/selenium/selenium_159.0.8133.1_AVX2_installer.exe",
+    "sha256": "4971864acfcbc7319aa43e37cbb88c16b56c6daadb280fee3f910f85789779a4",
+    "size_bytes": 160221944,
+    "notes": "Selenium Browser version 159.0.8133.1 estable (Chromium M159, AVX2 + Helium)."
   },
   "releases": [
+    {
+      "version": "159.0.8133.1",
+      "release_date": "2026-11-03",
+      "filename": "selenium_159.0.8133.1_AVX2_installer.exe",
+      "download_url": "https://update.dyepezg.dev/dl/selenium/selenium_159.0.8133.1_AVX2_installer.exe",
+      "sha256": "4971864acfcbc7319aa43e37cbb88c16b56c6daadb280fee3f910f85789779a4",
+      "size_bytes": 160221944,
+      "notes": "Selenium Browser version 159.0.8133.1 estable (Chromium M159, AVX2 + Helium)."
+    },
     {
       "version": "157.0.8079.2",
       "release_date": "2026-10-03",

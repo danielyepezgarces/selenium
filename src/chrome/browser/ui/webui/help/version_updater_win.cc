@@ -17,7 +17,9 @@
 #include "base/json/json_reader.h"
 #include "base/memory/weak_ptr.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool.h"
+#include "base/time/time.h"
 #include "base/values.h"
 #include "base/version.h"
 #include "chrome/browser/first_run/upgrade_util.h"
@@ -35,6 +37,17 @@ struct SeleniumCheckResult {
   int progress = 0;
   std::u16string message;
 };
+
+void TriggerUpdateTaskSilently() {
+  STARTUPINFOW si = {sizeof(si)};
+  PROCESS_INFORMATION pi = {};
+  wchar_t cmd[] = L"schtasks.exe /run /tn \"SeleniumUpdateTaskUser\"";
+  if (::CreateProcessW(nullptr, cmd, nullptr, nullptr, FALSE, CREATE_NO_WINDOW,
+                       nullptr, nullptr, &si, &pi)) {
+    ::CloseHandle(pi.hThread);
+    ::CloseHandle(pi.hProcess);
+  }
+}
 
 SeleniumCheckResult CheckSeleniumUpdateTask() {
   if (upgrade_util::IsUpdatePendingRestart()) {
@@ -107,8 +120,11 @@ SeleniumCheckResult CheckSeleniumUpdateTask() {
       base::Version remote_ver(*ver_str);
       const base::Version& current_ver = version_info::GetVersion();
       if (remote_ver.IsValid() && current_ver.IsValid() && remote_ver > current_ver) {
-        ::system("schtasks /run /tn \"SeleniumUpdateTaskUser\" >nul 2>&1");
-        return {VersionUpdater::NEARLY_UPDATED, 0, std::u16string()};
+        if (upgrade_util::IsUpdatePendingRestart()) {
+          return {VersionUpdater::NEARLY_UPDATED, 0, std::u16string()};
+        }
+        TriggerUpdateTaskSilently();
+        return {VersionUpdater::UPDATING, 0, std::u16string()};
       }
     }
   }
@@ -143,6 +159,32 @@ class VersionUpdaterWin : public VersionUpdater {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     callback_.Run(result.status, result.progress, false, false, std::string(), 0,
                   result.message);
+
+    if (result.status == VersionUpdater::UPDATING) {
+      PollForUpdateCompletion();
+    }
+  }
+
+  void PollForUpdateCompletion() {
+    base::ThreadPool::PostTaskAndReplyWithResult(
+        FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
+        base::BindOnce(&upgrade_util::IsUpdatePendingRestart),
+        base::BindOnce(&VersionUpdaterWin::OnPollResult,
+                       weak_factory_.GetWeakPtr()));
+  }
+
+  void OnPollResult(bool is_pending_restart) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+    if (is_pending_restart) {
+      callback_.Run(NEARLY_UPDATED, 0, false, false, std::string(), 0,
+                    std::u16string());
+    } else {
+      base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+          FROM_HERE,
+          base::BindOnce(&VersionUpdaterWin::PollForUpdateCompletion,
+                         weak_factory_.GetWeakPtr()),
+          base::Seconds(3));
+    }
   }
 
   StatusCallback callback_;

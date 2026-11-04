@@ -283,6 +283,7 @@ index 037b80488cf24..4e0e1b71ee947 100644
  # Chrome Application dir entries, sorted alphabetically.
  #
 -chrome.exe: %(ChromeDir)s\
++selenium.exe: %(ChromeDir)s\
 +thorium.exe: %(ChromeDir)s\
  chrome_proxy.exe: %(ChromeDir)s\
 +# thor_ver for Thorium-WinUpdater
