@@ -13,8 +13,7 @@
 namespace thorium {
 
 GURL CanonicalizeInternalURL(const GURL& url) {
-  if (!url.SchemeIs(content::kThoriumUIScheme) &&
-      !url.SchemeIs("thorium") &&
+  if (!url.SchemeIs("thorium") &&
       !url.SchemeIs("selenium")) {
     return url;
   }
@@ -46,8 +45,8 @@ std::u16string GetInternalURLTextForDisplay(const GURL& url,
   constexpr std::u16string_view kSeleniumScheme = u"selenium:";
   constexpr std::u16string_view kLegacyThoriumScheme = u"thorium:";
   if (!url.SchemeIs(content::kChromeUIScheme) &&
-      !url.SchemeIs(content::kThoriumUIScheme) &&
-      !url.SchemeIs("thorium")) {
+      !url.SchemeIs("thorium") &&
+      !url.SchemeIs("selenium")) {
     return std::u16string(formatted_url);
   }
 

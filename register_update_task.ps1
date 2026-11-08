@@ -1,29 +1,22 @@
 # ==============================================================================
 # Registra la Tarea Programada de Actualizacion en Segundo Plano (Estilo Chrome)
+# Utiliza silent_updater.vbs para ejecutar PowerShell sin ningun parpadeo de CMD
 # ==============================================================================
 $TaskName = "SeleniumUpdateTaskUser"
-$UpdaterScript = "C:\thorium\selenium_updater.ps1"
+$VbsScript = "C:\thorium\silent_updater.vbs"
 
-if (-not (Test-Path $UpdaterScript)) {
-    Write-Error "No se encontro el script del actualizador en: $UpdaterScript"
+if (-not (Test-Path $VbsScript)) {
+    Write-Error "No se encontro el lanzador silencioso en: $VbsScript"
     exit 1
 }
 
-$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$UpdaterScript`" -Silent"
-
-# Disparadores: Al iniciar sesion y diariamente cada 24 horas
-$TriggerLogon = New-ScheduledTaskTrigger -AtLogOn
-$TriggerDaily = New-ScheduledTaskTrigger -Daily -At "12:00"
-
-$Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RunOnlyIfNetworkAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 1)
-
 try {
-    # Usar schtasks.exe para registrar la tarea a nivel de usuario sin requerir elevacion de Administrador
-    $cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$UpdaterScript`" -Silent"
-    & schtasks.exe /Create /TN $TaskName /TR "`"$cmd`"" /SC DAILY /ST 12:00 /F | Out-Null
+    # Usar wscript.exe para invocar el VBS de forma 100% invisible (Subsystem GUI, SW_HIDE = 0)
+    $taskRun = "wscript.exe `"$VbsScript`""
+    & schtasks.exe /Create /TN $TaskName /TR $taskRun /SC DAILY /ST 12:00 /F | Out-Null
     
-    Write-Host "[EXITO] Tarea programada '$TaskName' registrada correctamente en Windows." -ForegroundColor Green
-    Write-Host "Se ejecutara diariamente a las 12:00 PM para mantener Selenium siempre actualizado." -ForegroundColor Cyan
+    Write-Host "[EXITO] Tarea programada '$TaskName' registrada correctamente con ejecucion 100% invisible." -ForegroundColor Green
+    Write-Host "Se ejecutara diariamente a las 12:00 PM sin ningun parpadeo de consola CMD." -ForegroundColor Cyan
 } catch {
     Write-Error "Error al registrar la tarea: $($_.Exception.Message)"
 }
